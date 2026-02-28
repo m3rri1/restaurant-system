@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script src="../config.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Restaurant</title>
@@ -634,8 +635,8 @@
 
 <script>
   // ===== CONFIG =====
-  const API = '192.168.1.100:3000/api';
-  const socket = io('192.168.1.100.2:3000');
+  const API = CONFIG.API;
+  const socket = io(CONFIG.SOCKET);
 
   // Get table number from URL: customer/index.html?table=3
   const urlParams = new URLSearchParams(window.location.search);

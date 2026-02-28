@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script src="../config.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Panel</title>
@@ -348,9 +349,9 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
 <script>
-  const API = '192.168.1.100/api';
-  const socket = io('192.168.1.100:3000');
-  const BASE_URL = '192.168.1.100:3000';
+  const API = CONFIG.API;
+  const socket = io(CONFIG.SOCKET);
+  const BASE_URL = CONFIG.SOCKET;
 
   // Clock
   setInterval(() => {
