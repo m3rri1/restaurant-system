@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restaurant</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fff8f0;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    .screen { display: none; padding: 20px; max-width: 480px; margin: 0 auto; }
+    .screen.active { display: block; }
+
+    /* Header */
+    .header {
+      background: #ff6b35;
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h2 { font-size: 18px; }
+    .back-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 22px;
+      cursor: pointer;
+    }
+    .table-badge {
+      margin-left: auto;
+      background: rgba(255,255,255,0.25);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* Home Screen */
+    .welcome-banner {
+      background: linear-gradient(135deg, #ff6b35, #f7931e);
+      color: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .welcome-banner h1 { font-size: 24px; margin-bottom: 6px; }
+    .welcome-banner p { opacity: 0.9; font-size: 14px; }
+
+    .grid-6 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .home-btn {
+      background: white;
+      border: none;
+      border-radius: 16px;
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .home-btn:active { transform: scale(0.96); }
+    .home-btn .icon { font-size: 36px; margin-bottom: 10px; }
+    .home-btn .label { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+    .home-btn .sub { font-size: 12px; color: #888; margin-top: 4px; }
+
+    /* Menu Screen */
+    .category-tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+      scrollbar-width: none;
+    }
+    .category-tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      background: white;
+      border: 2px solid #eee;
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      color: #666;
+    }
+    .tab.active { background: #ff6b35; border-color: #ff6b35; color: white; }
+
+    .menu-items { display: flex; flex-direction: column; gap: 12px; }
+    .menu-card {
+      background: white;
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .menu-info h4 { font-size: 15px; font-weight: 600; }
+    .menu-info p { font-size: 12px; color: #888; margin-top: 2px; }
+    .menu-info .price { font-size: 15px; font-weight: 700; color: #ff6b35; margin-top: 6px; }
+    .qty-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .qty-btn {
+      width: 30px; height: 30px;
+      background: #ff6b35;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .qty-num { font-size: 15px; font-weight: 700; min-width: 16px; text-align: center; }
+    .add-btn {
+      background: #ff6b35;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Physical menu popup */
+    .popup-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .popup-overlay.show { display: flex; }
+    .popup {
+      background: white;
+      border-radius: 20px;
+      padding: 28px;
+      width: 300px;
+      text-align: center;
+    }
+    .popup h3 { font-size: 18px; margin-bottom: 10px; }
+    .popup p { color: #666; font-size: 14px; margin-bottom: 20px; }
+    .popup-btns { display: flex; gap: 12px; justify-content: center; }
+    .btn-yes { background: #ff6b35; color: white; border: none; border-radius: 10px; padding: 10px 28px; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .btn-no { background: #eee; color: #333; border: none; border-radius: 10px; padding: 10px 28px; font-size: 15px; font-weight: 600; cursor: pointer; }
+
+    /* Cart bar */
+    .cart-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #ff6b35;
+      color: white;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 480px;
+      margin: 0 auto;
+      cursor: pointer;
+      display: none;
+    }
+    .cart-bar.show { display: flex; }
+    .cart-bar span { font-size: 15px; font-weight: 600; }
+
+    /* Cart Screen */
+    .cart-item {
+      background: white;
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .cart-item-info h4 { font-size: 15px; font-weight: 600; }
+    .cart-item-info p { font-size: 13px; color: #888; }
+    .cart-total {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .cart-total-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 16px;
+      font-weight: 700;
+      color: #ff6b35;
+    }
+    .place-order-btn {
+      width: 100%;
+      background: #ff6b35;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+
+    /* Waiter Screen */
+    .request-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .request-btn {
+      background: white;
+      border: none;
+      border-radius: 14px;
+      padding: 20px 12px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .request-btn .icon { font-size: 32px; margin-bottom: 8px; }
+    .request-btn .label { font-size: 14px; font-weight: 600; }
+
+    /* Bill Screen */
+    .bill-card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    .bill-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 14px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+    .bill-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      padding: 6px 0;
+      color: #444;
+    }
+    .bill-total-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 17px;
+      font-weight: 700;
+      padding-top: 12px;
+      margin-top: 8px;
+      border-top: 2px solid #ff6b35;
+      color: #ff6b35;
+    }
+    .bill-actions { display: flex; gap: 12px; }
+    .btn-correct { flex: 1; background: #22c55e; color: white; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; }
+    .btn-incorrect { flex: 1; background: #ef4444; color: white; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; }
+
+    /* Feedback Screen */
+    .feedback-item {
+      background: white;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .feedback-item h4 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    .stars { display: flex; gap: 6px; }
+    .star { font-size: 24px; cursor: pointer; color: #ddd; transition: color 0.1s; }
+    .star.active { color: #f7931e; }
+    .comment-box {
+      width: 100%;
+      border: 2px solid #eee;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 14px;
+      resize: none;
+      margin: 16px 0 4px;
+      font-family: inherit;
+    }
+    .comment-box:focus { outline: none; border-color: #ff6b35; }
+    .char-count { font-size: 12px; color: #888; text-align: right; margin-bottom: 16px; }
+
+    /* Complaint / Other Screen */
+    .complaint-box {
+      width: 100%;
+      border: 2px solid #eee;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 14px;
+      resize: none;
+      height: 160px;
+      font-family: inherit;
+      margin-bottom: 4px;
+    }
+    .complaint-box:focus { outline: none; border-color: #ff6b35; }
+
+    /* Submit / Action buttons */
+    .submit-btn {
+      width: 100%;
+      background: #ff6b35;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    /* Success toast */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #22c55e;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 999;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+
+    /* Chatbot */
+    .chat-fab {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 56px; height: 56px;
+      background: #ff6b35;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 26px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(255,107,53,0.4);
+      z-index: 300;
+    }
+    .chat-window {
+      display: none;
+      position: fixed;
+      bottom: 88px; right: 16px;
+      width: 300px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      z-index: 300;
+      overflow: hidden;
+    }
+    .chat-window.open { display: flex; flex-direction: column; }
+    .chat-header { background: #ff6b35; color: white; padding: 14px 16px; font-weight: 700; font-size: 15px; }
+    .chat-messages { padding: 12px; height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+    .msg { padding: 8px 12px; border-radius: 12px; font-size: 13px; max-width: 85%; }
+    .msg.bot { background: #f1f1f1; align-self: flex-start; }
+    .msg.user { background: #ff6b35; color: white; align-self: flex-end; }
+    .chat-suggestions { padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 6px; border-top: 1px solid #eee; }
+    .suggestion { background: #fff8f0; border: 1px solid #ff6b35; color: #ff6b35; border-radius: 20px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+    .order-status-section {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .order-status-section h3 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f1f1f1;
+      font-size: 13px;
+    }
+    .status-badge {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .status-badge.pending { background: #fef3c7; color: #d97706; }
+    .status-badge.preparing { background: #dbeafe; color: #2563eb; }
+    .status-badge.served { background: #dcfce7; color: #16a34a; }
+  </style>
+</head>
+<body>
+
+<!-- ===== SCREEN 1: HOME ===== -->
+<div class="screen active" id="screen-home">
+  <div class="header" style="border-radius:0">
+    <div>
+      <div style="font-weight:700;font-size:18px;">🍽️ Restaurant System</div>
+    </div>
+    <div class="table-badge" id="home-table-badge">Table ?</div>
+  </div>
+  <div style="padding:20px;">
+    <div class="welcome-banner">
+      <h1>Welcome! 👋</h1>
+      <p id="welcome-sub">Scan verified. You're all set to order.</p>
+    </div>
+    <div class="grid-6">
+      <button class="home-btn" onclick="showScreen('screen-order')">
+        <div class="icon">🍴</div>
+        <div class="label">Order</div>
+        <div class="sub">Browse menu</div>
+      </button>
+      <button class="home-btn" onclick="showScreen('screen-waiter')">
+        <div class="icon">🛎️</div>
+        <div class="label">Waiter</div>
+        <div class="sub">Call for help</div>
+      </button>
+      <button class="home-btn" onclick="showScreen('screen-bill')">
+        <div class="icon">💳</div>
+        <div class="label">Bill</div>
+        <div class="sub">Request bill</div>
+      </button>
+      <button class="home-btn" onclick="showScreen('screen-feedback')">
+        <div class="icon">⭐</div>
+        <div class="label">Feedback</div>
+        <div class="sub">Rate your meal</div>
+      </button>
+      <button class="home-btn" onclick="showScreen('screen-complaints')">
+        <div class="icon">📝</div>
+        <div class="label">Complaints</div>
+        <div class="sub">Report issue</div>
+      </button>
+      <button class="home-btn" onclick="showScreen('screen-other')">
+        <div class="icon">💬</div>
+        <div class="label">Other</div>
+        <div class="sub">Custom request</div>
+      </button>
+    </div>
+
+    <!-- Live Order Status on home -->
+    <div class="order-status-section" id="home-order-status" style="display:none">
+      <h3>📦 Your Active Orders</h3>
+      <div id="home-orders-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 2: ORDER (MENU) ===== -->
+<div class="screen" id="screen-order">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>Menu</h2>
+    <div class="table-badge" id="order-table-badge">Table ?</div>
+  </div>
+  <div style="padding:16px; padding-bottom:80px;">
+    <div class="category-tabs" id="category-tabs"></div>
+    <div class="menu-items" id="menu-items-list"></div>
+  </div>
+</div>
+
+<!-- Physical menu popup -->
+<div class="popup-overlay" id="physical-menu-popup">
+  <div class="popup">
+    <div style="font-size:40px;margin-bottom:12px;">📋</div>
+    <h3>Want a physical menu?</h3>
+    <p>A waiter will bring a printed menu to your table.</p>
+    <div class="popup-btns">
+      <button class="btn-yes" onclick="requestPhysicalMenu()">Yes please</button>
+      <button class="btn-no" onclick="closePopup()">No thanks</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cart bar -->
+<div class="cart-bar" id="cart-bar" onclick="showScreen('screen-cart')">
+  <span id="cart-bar-count">0 items</span>
+  <span id="cart-bar-total">₹0</span>
+  <span>View Cart →</span>
+</div>
+
+<!-- ===== SCREEN 3: CART ===== -->
+<div class="screen" id="screen-cart">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-order')">←</button>
+    <h2>Your Cart</h2>
+    <div class="table-badge" id="cart-table-badge">Table ?</div>
+  </div>
+  <div style="padding:16px;">
+    <div id="cart-items-list"></div>
+    <div class="cart-total" id="cart-total-section">
+      <div class="cart-total-row">
+        <span>Total</span>
+        <span id="cart-total-amount">₹0</span>
+      </div>
+    </div>
+    <button class="place-order-btn" onclick="placeOrder()">Place Order 🍽️</button>
+  </div>
+</div>
+
+<!-- ===== SCREEN 4: WAITER REQUESTS ===== -->
+<div class="screen" id="screen-waiter">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>Call Waiter</h2>
+    <div class="table-badge" id="waiter-table-badge">Table ?</div>
+  </div>
+  <div style="padding:20px;">
+    <p style="color:#888;font-size:14px;margin-bottom:16px;">What do you need? We'll send a waiter right away.</p>
+    <div class="request-grid">
+      <button class="request-btn" onclick="sendRequest('Order Modification')">
+        <div class="icon">✏️</div><div class="label">Order Modification</div>
+      </button>
+      <button class="request-btn" onclick="sendRequest('Tissue')">
+        <div class="icon">🧻</div><div class="label">Tissue</div>
+      </button>
+      <button class="request-btn" onclick="sendRequest('Cutlery')">
+        <div class="icon">🍴</div><div class="label">Cutlery</div>
+      </button>
+      <button class="request-btn" onclick="sendRequest('Condiments')">
+        <div class="icon">🧂</div><div class="label">Condiments</div>
+      </button>
+      <button class="request-btn" onclick="sendRequest('Cleaning')">
+        <div class="icon">🧹</div><div class="label">Cleaning</div>
+      </button>
+      <button class="request-btn" onclick="sendRequest('Other Help')">
+        <div class="icon">🙋</div><div class="label">Other</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 5: BILL ===== -->
+<div class="screen" id="screen-bill">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>Bill</h2>
+    <div class="table-badge" id="bill-table-badge">Table ?</div>
+  </div>
+  <div style="padding:20px;">
+    <div class="bill-card" id="bill-card">
+      <h3>Ordered Items</h3>
+      <div id="bill-items-list">
+        <p style="color:#aaa;font-size:14px;">Loading your orders...</p>
+      </div>
+      <div class="bill-total-row" style="margin-top:12px;">
+        <span>Total</span>
+        <span id="bill-total">₹0</span>
+      </div>
+    </div>
+    <p style="font-size:14px;color:#666;margin-bottom:14px;text-align:center;">Is your bill correct?</p>
+    <div class="bill-actions">
+      <button class="btn-correct" onclick="confirmBill()">✓ Correct</button>
+      <button class="btn-incorrect" onclick="incorrectBill()">✗ Incorrect</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 6: FEEDBACK ===== -->
+<div class="screen" id="screen-feedback">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>Feedback</h2>
+    <div class="table-badge" id="feedback-table-badge">Table ?</div>
+  </div>
+  <div style="padding:20px;">
+    <p style="color:#888;font-size:14px;margin-bottom:16px;">Rate each item you ordered:</p>
+    <div id="feedback-items-list"></div>
+    <textarea class="comment-box" id="feedback-comment" placeholder="Any suggestions... (optional)" maxlength="200" rows="4" oninput="updateCharCount(this, 'feedback-char')"></textarea>
+    <div class="char-count"><span id="feedback-char">0</span>/200</div>
+    <button class="submit-btn" onclick="submitFeedback()">Submit Feedback ⭐</button>
+  </div>
+</div>
+
+<!-- ===== SCREEN 7: COMPLAINTS ===== -->
+<div class="screen" id="screen-complaints">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>Complaints</h2>
+    <div class="table-badge" id="complaints-table-badge">Table ?</div>
+  </div>
+  <div style="padding:20px;">
+    <p style="color:#888;font-size:14px;margin-bottom:16px;">Write your complaint. It will go directly to the manager.</p>
+    <textarea class="complaint-box" id="complaint-text" placeholder="Write here... (max 500 characters)" maxlength="500" oninput="updateCharCount(this, 'complaint-char')"></textarea>
+    <div class="char-count"><span id="complaint-char">0</span>/500</div>
+    <button class="submit-btn" onclick="submitComplaint()">Submit Complaint 📝</button>
+  </div>
+</div>
+
+<!-- ===== SCREEN 8: OTHER ===== -->
+<div class="screen" id="screen-other">
+  <div class="header">
+    <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+    <h2>Other Request</h2>
+    <div class="table-badge" id="other-table-badge">Table ?</div>
+  </div>
+  <div style="padding:20px;">
+    <p style="color:#888;font-size:14px;margin-bottom:16px;">Need something else? The manager will be notified directly.</p>
+    <textarea class="complaint-box" id="other-text" placeholder="Describe what you need..."></textarea>
+    <button class="submit-btn" onclick="submitOther()">Send Request 💬</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Chatbot -->
+<button class="chat-fab" onclick="toggleChat()">💬</button>
+<div class="chat-window" id="chat-window">
+  <div class="chat-header">🤖 DineBot — Ask me anything!</div>
+  <div class="chat-messages" id="chat-messages"></div>
+  <div class="chat-suggestions">
+    <button class="suggestion" onclick="askBot('How to order?')">How to order?</button>
+    <button class="suggestion" onclick="askBot('Call waiter')">Call waiter</button>
+    <button class="suggestion" onclick="askBot('Where is my order?')">Order status</button>
+    <button class="suggestion" onclick="askBot('How to get bill?')">Get bill</button>
+    <button class="suggestion" onclick="askBot('Timings')">Timings</button>
+  </div>
+</div>
+
+<script>
+  // ===== CONFIG =====
+  const API = '192.168.1.100:3000/api';
+  const socket = io('192.168.1.100.2:3000');
+
+  // Get table number from URL: customer/index.html?table=3
+  const urlParams = new URLSearchParams(window.location.search);
+  const TABLE_NUMBER = parseInt(urlParams.get('table')) || 1;
+
+  // Update all table badges
+  document.querySelectorAll('[id$="-table-badge"], #home-table-badge').forEach(el => {
+    el.textContent = `Table ${TABLE_NUMBER}`;
+  });
+  document.getElementById('welcome-sub').textContent = `Table ${TABLE_NUMBER} — You're all set to order!`;
+
+  // ===== CART STATE =====
+  let cart = {}; // { itemId: { name, price, qty } }
+  let menuData = [];
+  let currentCategory = 'All';
+  let feedbackRatings = {}; // { itemName: stars }
+
+  // ===== SCREEN NAVIGATION =====
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+
+    if (id === 'screen-order') {
+      loadMenu();
+      setTimeout(() => document.getElementById('physical-menu-popup').classList.add('show'), 800);
+    }
+    if (id === 'screen-bill') loadBill();
+    if (id === 'screen-feedback') loadFeedbackItems();
+    if (id === 'screen-home') loadHomeOrders();
+  }
+
+  // ===== TOAST =====
+  function showToast(msg, color = '#22c55e') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = color;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ===== CHAR COUNT =====
+  function updateCharCount(el, countId) {
+    document.getElementById(countId).textContent = el.value.length;
+  }
+
+  // ===== MENU =====
+  async function loadMenu() {
+    const res = await fetch(`${API}/menu`);
+    menuData = await res.json();
+    renderCategories();
+    renderMenuItems();
+  }
+
+  function renderCategories() {
+    const cats = ['All', ...new Set(menuData.map(i => i.category))];
+    const container = document.getElementById('category-tabs');
+    container.innerHTML = cats.map(c =>
+      `<button class="tab ${c === currentCategory ? 'active' : ''}" onclick="filterCategory('${c}')">${c}</button>`
+    ).join('');
+  }
+
+  function filterCategory(cat) {
+    currentCategory = cat;
+    renderCategories();
+    renderMenuItems();
+  }
+
+  function renderMenuItems() {
+    const filtered = currentCategory === 'All' ? menuData : menuData.filter(i => i.category === currentCategory);
+    const container = document.getElementById('menu-items-list');
+    container.innerHTML = filtered.map(item => {
+      const qty = cart[item._id]?.qty || 0;
+      return `
+        <div class="menu-card">
+          <div class="menu-info">
+            <h4>${item.name}</h4>
+            <p>${item.description || ''}</p>
+            <div class="price">₹${item.price}</div>
+          </div>
+          ${qty === 0
+            ? `<button class="add-btn" onclick="addToCart('${item._id}', '${item.name}', ${item.price})">Add +</button>`
+            : `<div class="qty-control">
+                <button class="qty-btn" onclick="changeQty('${item._id}', -1)">−</button>
+                <span class="qty-num">${qty}</span>
+                <button class="qty-btn" onclick="changeQty('${item._id}', 1)">+</button>
+               </div>`
+          }
+        </div>`;
+    }).join('');
+  }
+
+  function addToCart(id, name, price) {
+    cart[id] = { name, price, qty: 1 };
+    updateCartBar();
+    renderMenuItems();
+  }
+
+  function changeQty(id, delta) {
+    if (!cart[id]) return;
+    cart[id].qty += delta;
+    if (cart[id].qty <= 0) delete cart[id];
+    updateCartBar();
+    renderMenuItems();
+  }
+
+  function updateCartBar() {
+    const items = Object.values(cart);
+    const totalQty = items.reduce((s, i) => s + i.qty, 0);
+    const totalPrice = items.reduce((s, i) => s + i.qty * i.price, 0);
+    const bar = document.getElementById('cart-bar');
+    if (totalQty === 0) { bar.classList.remove('show'); return; }
+    bar.classList.add('show');
+    document.getElementById('cart-bar-count').textContent = `${totalQty} item${totalQty > 1 ? 's' : ''}`;
+    document.getElementById('cart-bar-total').textContent = `₹${totalPrice}`;
+  }
+
+  function showScreen_cart() {
+    // Render cart items
+    const container = document.getElementById('cart-items-list');
+    const items = Object.values(cart);
+    if (items.length === 0) { container.innerHTML = '<p style="color:#aaa">Your cart is empty</p>'; return; }
+    container.innerHTML = items.map(i => `
+      <div class="cart-item">
+        <div class="cart-item-info">
+          <h4>${i.name}</h4>
+          <p>x${i.qty}</p>
+        </div>
+        <span style="font-weight:700;color:#ff6b35">₹${i.qty * i.price}</span>
+      </div>`).join('');
+    const total = items.reduce((s, i) => s + i.qty * i.price, 0);
+    document.getElementById('cart-total-amount').textContent = `₹${total}`;
+  }
+
+  // Override showScreen for cart
+  const _showScreen = showScreen;
+  window.showScreen = function(id) {
+    _showScreen(id);
+    if (id === 'screen-cart') showScreen_cart();
+  }
+
+  async function placeOrder() {
+    const items = Object.values(cart).map(i => ({ name: i.name, qty: i.qty, price: i.price }));
+    if (items.length === 0) { showToast('Cart is empty!', '#ef4444'); return; }
+    const res = await fetch(`${API}/orders/place`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableNumber: TABLE_NUMBER, items })
+    });
+    const data = await res.json();
+    cart = {};
+    updateCartBar();
+    showToast('Order placed! 🎉');
+    showScreen('screen-home');
+  }
+
+  // ===== PHYSICAL MENU =====
+  function closePopup() {
+    document.getElementById('physical-menu-popup').classList.remove('show');
+  }
+  async function requestPhysicalMenu() {
+    await fetch(`${API}/requests/new`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableNumber: TABLE_NUMBER, type: 'Physical Menu' })
+    });
+    closePopup();
+    showToast('Physical menu requested!');
+  }
+
+  // ===== WAITER REQUESTS =====
+  async function sendRequest(type) {
+    await fetch(`${API}/requests/new`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableNumber: TABLE_NUMBER, type })
+    });
+    showToast(`${type} requested! Waiter coming 🏃`);
+  }
+
+  // ===== BILL =====
+  async function loadBill() {
+    const res = await fetch(`${API}/orders/table/${TABLE_NUMBER}`);
+    const orders = await res.json();
+    const container = document.getElementById('bill-items-list');
+    if (!orders.length) { container.innerHTML = '<p style="color:#aaa;font-size:14px;">No orders yet.</p>'; return; }
+    let total = 0;
+    let html = '';
+    orders.forEach(order => {
+      order.items.forEach(item => {
+        total += item.price * item.qty;
+        html += `<div class="bill-row"><span>${item.name} x${item.qty}</span><span>₹${item.price * item.qty}</span></div>`;
+      });
+    });
+    container.innerHTML = html;
+    document.getElementById('bill-total').textContent = `₹${total}`;
+  }
+
+  async function confirmBill() {
+    await fetch(`${API}/requests/new`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableNumber: TABLE_NUMBER, type: 'Bill Request' })
+    });
+    showToast('Bill requested! Waiter is coming 💳');
+    setTimeout(() => showScreen('screen-feedback'), 1500);
+  }
+
+  async function incorrectBill() {
+    await fetch(`${API}/requests/new`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableNumber: TABLE_NUMBER, type: 'Bill Incorrect - Please Check' })
+    });
+    showToast('Waiter notified about bill issue!', '#f7931e');
+  }
+
+  // ===== FEEDBACK =====
+  async function loadFeedbackItems() {
+    const res = await fetch(`${API}/orders/table/${TABLE_NUMBER}`);
+    const orders = await res.json();
+    const container = document.getElementById('feedback-items-list');
+    if (!orders.length) { container.innerHTML = '<p style="color:#aaa;font-size:14px;">No orders to rate yet.</p>'; return; }
+    let items = [];
+    orders.forEach(o => o.items.forEach(i => { if (!items.find(x => x.name === i.name)) items.push(i); }));
+    feedbackRatings = {};
+    container.innerHTML = items.map(item => `
+      <div class="feedback-item">
+        <h4>${item.name}</h4>
+        <div class="stars" id="stars-${item.name.replace(/\s/g,'_')}">
+          ${[1,2,3,4,5].map(n => `<span class="star" onclick="rateStar('${item.name}', ${n})">★</span>`).join('')}
+        </div>
+      </div>`).join('');
+  }
+
+  function rateStar(itemName, stars) {
+    feedbackRatings[itemName] = stars;
+    const key = itemName.replace(/\s/g, '_');
+    document.querySelectorAll(`#stars-${key} .star`).forEach((s, i) => {
+      s.classList.toggle('active', i < stars);
+    });
+  }
+
+  async function submitFeedback() {
+    const comment = document.getElementById('feedback-comment').value;
+    const ratings = Object.entries(feedbackRatings).map(([itemName, stars]) => ({ itemName, stars }));
+    await fetch(`${API}/feedback/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableNumber: TABLE_NUMBER, ratings, comment })
+    });
+    showToast('Thank you for your feedback! ⭐');
+    setTimeout(() => showScreen('screen-home'), 1500);
+  }
+
+  // ===== COMPLAINTS =====
+  async function submitComplaint() {
+    const message = document.getElementById('complaint-text').value.trim();
+    if (!message) { showToast('Please write your complaint first', '#ef4444'); return; }
+    await fetch(`${API}/complaints/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableNumber: TABLE_NUMBER, message })
+    });
+    document.getElementById('complaint-text').value = '';
+    showToast('Complaint sent to manager 📝');
+    setTimeout(() => showScreen('screen-home'), 1500);
+  }
+
+  // ===== OTHER =====
+  async function submitOther() {
+    const message = document.getElementById('other-text').value.trim();
+    if (!message) { showToast('Please describe what you need', '#ef4444'); return; }
+    await fetch(`${API}/complaints/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableNumber: TABLE_NUMBER, message: '[OTHER] ' + message })
+    });
+    document.getElementById('other-text').value = '';
+    showToast('Manager notified! 💬');
+    setTimeout(() => showScreen('screen-home'), 1500);
+  }
+
+  // ===== HOME ORDER STATUS =====
+  async function loadHomeOrders() {
+    const res = await fetch(`${API}/orders/table/${TABLE_NUMBER}`);
+    const orders = await res.json();
+    const section = document.getElementById('home-order-status');
+    const list = document.getElementById('home-orders-list');
+    if (!orders.length) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    list.innerHTML = orders.map(o => o.items.map(item =>
+      `<div class="status-item">
+        <span>${item.name} x${item.qty}</span>
+        <span class="status-badge ${o.status}">${o.status}</span>
+      </div>`
+    ).join('')).join('');
+  }
+
+  // ===== SOCKET: Live order updates =====
+  socket.on('order-updated', (order) => {
+    if (order.tableNumber === TABLE_NUMBER) {
+      loadHomeOrders();
+      showToast(`Order update: ${order.status} 🍽️`, '#2563eb');
+    }
+  });
+
+  // ===== CHATBOT =====
+  function toggleChat() {
+    const w = document.getElementById('chat-window');
+    w.classList.toggle('open');
+    if (w.classList.contains('open') && document.getElementById('chat-messages').children.length === 0) {
+      addBotMsg("Hi! I'm DineBot 🤖 How can I help you today?");
+    }
+  }
+
+  function addBotMsg(msg) {
+    const c = document.getElementById('chat-messages');
+    c.innerHTML += `<div class="msg bot">${msg}</div>`;
+    c.scrollTop = c.scrollHeight;
+  }
+
+  function addUserMsg(msg) {
+    const c = document.getElementById('chat-messages');
+    c.innerHTML += `<div class="msg user">${msg}</div>`;
+    c.scrollTop = c.scrollHeight;
+  }
+
+  function askBot(question) {
+    addUserMsg(question);
+    setTimeout(() => {
+      const q = question.toLowerCase();
+      if (q.includes('order') && !q.includes('status')) addBotMsg("Tap the 🍴 Order button on the home screen to browse our menu and add items to your cart!");
+      else if (q.includes('waiter') || q.includes('call')) addBotMsg("Tap the 🛎️ Waiter button to call for help. You can request tissue, cutlery, condiments and more!");
+      else if (q.includes('bill')) addBotMsg("Tap the 💳 Bill button. You'll see your full order summary. Tap 'Correct' to request your bill!");
+      else if (q.includes('status') || q.includes('where')) addBotMsg("Your live order status is shown on the Home screen. We'll also notify you when your order is ready!");
+      else if (q.includes('timing')) addBotMsg("We're open every day from 10:00 AM to 11:00 PM. Happy dining! 🍽️");
+      else if (q.includes('feedback')) addBotMsg("Tap the ⭐ Feedback button to rate your items and leave suggestions. We love hearing from you!");
+      else addBotMsg("I'm not sure about that. Try tapping one of the quick options below, or ask a waiter for help! 😊");
+    }, 500);
+  }
+
+  // Init
+  loadHomeOrders();
+</script>
+</body>
+</html>

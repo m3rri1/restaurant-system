@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f6fb; color: #1a1a1a; }
+
+    .header {
+      background: #0f172a;
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h1 { font-size: 18px; }
+    .header .sub { font-size: 12px; opacity: 0.5; margin-top: 2px; }
+
+    .nav {
+      display: flex;
+      background: white;
+      border-bottom: 2px solid #eee;
+      overflow-x: auto;
+      position: sticky;
+      top: 57px;
+      z-index: 99;
+      scrollbar-width: none;
+    }
+    .nav::-webkit-scrollbar { display: none; }
+    .nav-item {
+      padding: 14px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #888;
+      cursor: pointer;
+      white-space: nowrap;
+      border-bottom: 3px solid transparent;
+    }
+    .nav-item.active { color: #ff6b35; border-bottom-color: #ff6b35; }
+
+    .page { display: none; padding: 20px; max-width: 900px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      text-align: center;
+    }
+    .stat-card .num { font-size: 32px; font-weight: 800; color: #ff6b35; }
+    .stat-card .label { font-size: 13px; color: #888; margin-top: 4px; }
+
+    /* Tables grid */
+    .tables-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .table-tile {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-top: 4px solid #22c55e;
+      cursor: pointer;
+    }
+    .table-tile.occupied { border-top-color: #ef4444; }
+    .table-tile.reserved { border-top-color: #f7931e; }
+    .table-tile .tnum { font-size: 22px; font-weight: 800; }
+    .table-tile .tstatus { font-size: 12px; color: #888; margin-top: 4px; }
+    .table-tile select {
+      margin-top: 10px;
+      width: 100%;
+      padding: 6px;
+      border-radius: 8px;
+      border: 1px solid #eee;
+      font-size: 12px;
+      color: #444;
+    }
+
+    /* Section headers */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .section-header h2 { font-size: 16px; font-weight: 700; }
+
+    /* Forms */
+    .form-card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 20px;
+    }
+    .form-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .form-input {
+      flex: 1;
+      min-width: 120px;
+      padding: 10px 12px;
+      border: 2px solid #eee;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .form-input:focus { outline: none; border-color: #ff6b35; }
+    .btn-add {
+      background: #ff6b35;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Menu items list */
+    .menu-list { display: flex; flex-direction: column; gap: 10px; }
+    .menu-row {
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .menu-row-info h4 { font-size: 14px; font-weight: 600; }
+    .menu-row-info p { font-size: 12px; color: #888; }
+    .menu-row-right { display: flex; align-items: center; gap: 10px; }
+    .price-tag { font-weight: 700; color: #ff6b35; font-size: 15px; }
+    .toggle-btn {
+      padding: 5px 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .toggle-btn.available { background: #dcfce7; color: #16a34a; }
+    .toggle-btn.unavailable { background: #fee2e2; color: #ef4444; }
+
+    /* Complaints / Feedback cards */
+    .complaint-card {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-left: 4px solid #ef4444;
+    }
+    .complaint-card.resolved { border-left-color: #22c55e; opacity: 0.6; }
+    .complaint-card.other { border-left-color: #8b5cf6; }
+    .complaint-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .complaint-table { font-weight: 700; color: #ef4444; }
+    .complaint-card.other .complaint-table { color: #8b5cf6; }
+    .complaint-time { font-size: 12px; color: #aaa; }
+    .complaint-msg { font-size: 14px; color: #444; line-height: 1.5; }
+    .resolve-btn {
+      margin-top: 10px;
+      background: #dcfce7;
+      color: #16a34a;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Feedback */
+    .feedback-card {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .feedback-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .feedback-table { font-weight: 700; color: #f7931e; }
+    .rating-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
+    .stars-display { color: #f7931e; }
+    .feedback-comment { font-size: 13px; color: #666; margin-top: 8px; font-style: italic; }
+
+    /* QR Section */
+    .qr-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; }
+    .qr-card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .qr-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+    .qr-card canvas { border-radius: 8px; }
+    .qr-url { font-size: 11px; color: #aaa; margin-top: 8px; word-break: break-all; }
+    .print-btn {
+      margin-top: 10px;
+      background: #0f172a;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .empty-state { text-align: center; padding: 40px; color: #aaa; }
+    .empty-state .icon { font-size: 40px; margin-bottom: 10px; }
+
+    .badge-new {
+      background: #ef4444;
+      color: white;
+      border-radius: 20px;
+      padding: 1px 7px;
+      font-size: 11px;
+      margin-left: 5px;
+    }
+
+    @media(min-width:600px) {
+      .stats-grid { grid-template-columns: repeat(4,1fr); }
+      .tables-grid { grid-template-columns: repeat(4,1fr); }
+      .qr-grid { grid-template-columns: repeat(3,1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>🧑‍💼 Admin Panel</h1>
+    <div class="sub">Restaurant Management</div>
+  </div>
+  <div style="font-size:13px;opacity:0.6;" id="clock"></div>
+</div>
+
+<div class="nav">
+  <div class="nav-item active" onclick="switchPage('dashboard')" id="nav-dashboard">📊 Dashboard</div>
+  <div class="nav-item" onclick="switchPage('tables')" id="nav-tables">🪑 Tables</div>
+  <div class="nav-item" onclick="switchPage('menu')" id="nav-menu">🍴 Menu</div>
+  <div class="nav-item" onclick="switchPage('complaints')" id="nav-complaints">📝 Complaints <span class="badge-new" id="complaints-badge" style="display:none">!</span></div>
+  <div class="nav-item" onclick="switchPage('feedback')" id="nav-feedback">⭐ Feedback</div>
+  <div class="nav-item" onclick="switchPage('qr')" id="nav-qr">📲 QR Codes</div>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div class="page active" id="page-dashboard">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="num" id="stat-orders">0</div>
+      <div class="label">Active Orders</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" id="stat-requests">0</div>
+      <div class="label">Pending Requests</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" id="stat-complaints">0</div>
+      <div class="label">New Complaints</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" id="stat-tables">0</div>
+      <div class="label">Occupied Tables</div>
+    </div>
+  </div>
+
+  <div class="section-header"><h2>🔴 Live Activity</h2></div>
+  <div id="live-activity"></div>
+</div>
+
+<!-- ===== TABLES ===== -->
+<div class="page" id="page-tables">
+  <div class="form-card">
+    <h3>➕ Add New Table</h3>
+    <div class="form-row">
+      <input class="form-input" type="number" id="new-table-num" placeholder="Table number (e.g. 7)">
+      <button class="btn-add" onclick="addTable()">Add Table</button>
+    </div>
+  </div>
+  <div class="section-header"><h2>All Tables</h2></div>
+  <div class="tables-grid" id="tables-grid"></div>
+</div>
+
+<!-- ===== MENU ===== -->
+<div class="page" id="page-menu">
+  <div class="form-card">
+    <h3>➕ Add Menu Item</h3>
+    <div class="form-row">
+      <input class="form-input" id="item-name" placeholder="Item name">
+      <input class="form-input" id="item-category" placeholder="Category (e.g. Starters)">
+    </div>
+    <div class="form-row">
+      <input class="form-input" id="item-price" type="number" placeholder="Price (₹)">
+      <input class="form-input" id="item-desc" placeholder="Description (optional)">
+      <button class="btn-add" onclick="addMenuItem()">Add</button>
+    </div>
+  </div>
+  <div class="section-header"><h2>Menu Items</h2></div>
+  <div class="menu-list" id="menu-list"></div>
+</div>
+
+<!-- ===== COMPLAINTS ===== -->
+<div class="page" id="page-complaints">
+  <div class="section-header"><h2>Complaints & Other Requests</h2></div>
+  <div id="complaints-list"></div>
+</div>
+
+<!-- ===== FEEDBACK ===== -->
+<div class="page" id="page-feedback">
+  <div class="section-header"><h2>Customer Feedback</h2></div>
+  <div id="feedback-list"></div>
+</div>
+
+<!-- ===== QR CODES ===== -->
+<div class="page" id="page-qr">
+  <div class="section-header">
+    <h2>QR Codes per Table</h2>
+    <button class="btn-add" onclick="loadQR()">🔄 Refresh</button>
+  </div>
+  <p style="font-size:13px;color:#888;margin-bottom:16px;">Each QR points customers directly to their table's ordering page.</p>
+  <div class="qr-grid" id="qr-grid"></div>
+</div>
+
+<!-- QR Library -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<script>
+  const API = '192.168.1.100/api';
+  const socket = io('192.168.1.100:3000');
+  const BASE_URL = '192.168.1.100:3000';
+
+  // Clock
+  setInterval(() => {
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  }, 1000);
+
+  // Page switching
+  function switchPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.getElementById('nav-' + page).classList.add('active');
+    if (page === 'dashboard') loadDashboard();
+    if (page === 'tables') loadTables();
+    if (page === 'menu') loadMenu();
+    if (page === 'complaints') loadComplaints();
+    if (page === 'feedback') loadFeedback();
+    if (page === 'qr') loadQR();
+  }
+
+  function timeAgo(date) {
+    const diff = Math.floor((Date.now() - new Date(date)) / 1000);
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+    return `${Math.floor(diff/3600)}h ago`;
+  }
+
+  // ===== DASHBOARD =====
+  async function loadDashboard() {
+    const [ordersRes, requestsRes, complaintsRes, tablesRes] = await Promise.all([
+      fetch(`${API}/orders/all`),
+      fetch(`${API}/requests/all`),
+      fetch(`${API}/complaints/all`),
+      fetch(`${API}/tables`)
+    ]);
+    const orders = await ordersRes.json();
+    const requests = await requestsRes.json();
+    const complaints = await complaintsRes.json();
+    const tables = await tablesRes.json();
+
+    const activeOrders = orders.filter(o => o.status !== 'served');
+    const pendingReqs = requests.filter(r => r.status !== 'done');
+    const newComplaints = complaints.filter(c => c.status === 'new');
+    const occupiedTables = tables.filter(t => t.status === 'occupied');
+
+    document.getElementById('stat-orders').textContent = activeOrders.length;
+    document.getElementById('stat-requests').textContent = pendingReqs.length;
+    document.getElementById('stat-complaints').textContent = newComplaints.length;
+    document.getElementById('stat-tables').textContent = occupiedTables.length;
+
+    // Live activity feed
+    const allActivity = [
+      ...activeOrders.map(o => ({ type: 'order', label: `🍽️ Table ${o.tableNumber} placed an order`, time: o.createdAt, color: '#ff6b35' })),
+      ...pendingReqs.map(r => ({ type: 'request', label: `🛎️ Table ${r.tableNumber}: ${r.type}`, time: r.createdAt, color: '#3b82f6' })),
+      ...newComplaints.map(c => ({ type: 'complaint', label: `📝 Table ${c.tableNumber}: ${c.message.substring(0,40)}...`, time: c.createdAt, color: '#ef4444' }))
+    ].sort((a,b) => new Date(b.time) - new Date(a.time)).slice(0, 10);
+
+    const container = document.getElementById('live-activity');
+    if (!allActivity.length) {
+      container.innerHTML = `<div class="empty-state"><div class="icon">😴</div><p>All quiet right now!</p></div>`;
+      return;
+    }
+    container.innerHTML = allActivity.map(a => `
+      <div style="background:white;border-radius:12px;padding:12px 16px;margin-bottom:10px;
+        border-left:4px solid ${a.color};box-shadow:0 2px 6px rgba(0,0,0,0.05);
+        display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:14px;">${a.label}</span>
+        <span style="font-size:12px;color:#aaa;">${timeAgo(a.time)}</span>
+      </div>`).join('');
+  }
+
+  // ===== TABLES =====
+  async function loadTables() {
+    const res = await fetch(`${API}/tables`);
+    const tables = await res.json();
+    const grid = document.getElementById('tables-grid');
+    if (!tables.length) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">🪑</div><p>No tables yet. Add one above!</p></div>`;
+      return;
+    }
+    grid.innerHTML = tables.map(t => `
+      <div class="table-tile ${t.status}" id="tile-${t._id}">
+        <div class="tnum">T${t.tableNumber}</div>
+        <div class="tstatus">${t.status}</div>
+        <select onchange="updateTableStatus('${t.tableNumber}', this.value)">
+          <option ${t.status==='empty'?'selected':''}>empty</option>
+          <option ${t.status==='occupied'?'selected':''}>occupied</option>
+          <option ${t.status==='reserved'?'selected':''}>reserved</option>
+        </select>
+      </div>`).join('');
+  }
+
+  async function addTable() {
+    const num = document.getElementById('new-table-num').value;
+    if (!num) return;
+    await fetch(`${API}/tables/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableNumber: parseInt(num) })
+    });
+    document.getElementById('new-table-num').value = '';
+    loadTables();
+  }
+
+  async function updateTableStatus(tableNumber, status) {
+    await fetch(`${API}/tables/status/${tableNumber}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    loadTables();
+  }
+
+  // ===== MENU =====
+  async function loadMenu() {
+    const res = await fetch(`${API}/menu`);
+    const items = await res.json();
+    const container = document.getElementById('menu-list');
+    if (!items.length) {
+      container.innerHTML = `<div class="empty-state"><div class="icon">🍴</div><p>No menu items yet</p></div>`;
+      return;
+    }
+    container.innerHTML = items.map(item => `
+      <div class="menu-row">
+        <div class="menu-row-info">
+          <h4>${item.name}</h4>
+          <p>${item.category} ${item.description ? '· ' + item.description : ''}</p>
+        </div>
+        <div class="menu-row-right">
+          <span class="price-tag">₹${item.price}</span>
+          <button class="toggle-btn ${item.available ? 'available' : 'unavailable'}"
+            onclick="toggleItem('${item._id}')">
+            ${item.available ? '✓ Available' : '✗ Unavailable'}
+          </button>
+        </div>
+      </div>`).join('');
+  }
+
+  async function addMenuItem() {
+    const name = document.getElementById('item-name').value.trim();
+    const category = document.getElementById('item-category').value.trim();
+    const price = document.getElementById('item-price').value;
+    const description = document.getElementById('item-desc').value.trim();
+    if (!name || !price) return alert('Name and price are required!');
+    await fetch(`${API}/menu/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, category, price: parseInt(price), description })
+    });
+    document.getElementById('item-name').value = '';
+    document.getElementById('item-category').value = '';
+    document.getElementById('item-price').value = '';
+    document.getElementById('item-desc').value = '';
+    loadMenu();
+  }
+
+  async function toggleItem(id) {
+    await fetch(`${API}/menu/toggle/${id}`, { method: 'PUT' });
+    loadMenu();
+  }
+
+  // ===== COMPLAINTS =====
+  async function loadComplaints() {
+    const res = await fetch(`${API}/complaints/all`);
+    const complaints = await res.json();
+    const newCount = complaints.filter(c => c.status === 'new').length;
+    const badge = document.getElementById('complaints-badge');
+    badge.style.display = newCount ? 'inline' : 'none';
+    badge.textContent = newCount;
+
+    const container = document.getElementById('complaints-list');
+    if (!complaints.length) {
+      container.innerHTML = `<div class="empty-state"><div class="icon">✅</div><p>No complaints!</p></div>`;
+      return;
+    }
+    container.innerHTML = complaints.map(c => `
+      <div class="complaint-card ${c.status === 'resolved' ? 'resolved' : ''} ${c.message.startsWith('[OTHER]') ? 'other' : ''}">
+        <div class="complaint-header">
+          <span class="complaint-table">
+            ${c.message.startsWith('[OTHER]') ? '💬 Other' : '📝 Complaint'} — Table ${c.tableNumber}
+          </span>
+          <span class="complaint-time">${timeAgo(c.createdAt)}</span>
+        </div>
+        <div class="complaint-msg">${c.message.replace('[OTHER] ', '')}</div>
+        ${c.status !== 'resolved'
+          ? `<button class="resolve-btn" onclick="resolveComplaint('${c._id}')">✓ Mark Resolved</button>`
+          : '<div style="font-size:12px;color:#16a34a;margin-top:8px;">✓ Resolved</div>'}
+      </div>`).join('');
+  }
+
+  async function resolveComplaint(id) {
+    await fetch(`${API}/complaints/status/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'resolved' })
+    });
+    loadComplaints();
+  }
+
+  // ===== FEEDBACK =====
+  async function loadFeedback() {
+    const res = await fetch(`${API}/feedback/all`);
+    const feedbacks = await res.json();
+    const container = document.getElementById('feedback-list');
+    if (!feedbacks.length) {
+      container.innerHTML = `<div class="empty-state"><div class="icon">⭐</div><p>No feedback yet</p></div>`;
+      return;
+    }
+    container.innerHTML = feedbacks.map(f => `
+      <div class="feedback-card">
+        <div class="feedback-header">
+          <span class="feedback-table">Table ${f.tableNumber}</span>
+          <span style="font-size:12px;color:#aaa;">${timeAgo(f.createdAt)}</span>
+        </div>
+        ${f.ratings.map(r => `
+          <div class="rating-row">
+            <span>${r.itemName}</span>
+            <span class="stars-display">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</span>
+          </div>`).join('')}
+        ${f.comment ? `<div class="feedback-comment">"${f.comment}"</div>` : ''}
+      </div>`).join('');
+  }
+
+  // ===== QR CODES =====
+  async function loadQR() {
+    const res = await fetch(`${API}/tables`);
+    const tables = await res.json();
+    const grid = document.getElementById('qr-grid');
+    if (!tables.length) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">📲</div><p>Add tables first to generate QR codes</p></div>`;
+      return;
+    }
+    grid.innerHTML = tables.map(t => `
+      <div class="qr-card">
+        <h4>Table ${t.tableNumber}</h4>
+        <div id="qr-${t.tableNumber}"></div>
+        <div class="qr-url">/customer/index.html?table=${t.tableNumber}</div>
+        <button class="print-btn" onclick="printQR(${t.tableNumber})">🖨️ Print</button>
+      </div>`).join('');
+
+    // Generate QR codes
+    tables.forEach(t => {
+      new QRCode(document.getElementById(`qr-${t.tableNumber}`), {
+        text: `${BASE_URL}/customer/index.html?table=${t.tableNumber}`,
+        width: 140,
+        height: 140,
+        colorDark: '#0f172a',
+        colorLight: '#ffffff'
+      });
+    });
+  }
+
+  function printQR(tableNumber) {
+    const canvas = document.querySelector(`#qr-${tableNumber} canvas`);
+    const win = window.open('');
+    win.document.write(`
+      <html><body style="text-align:center;padding:40px;font-family:sans-serif;">
+        <h2 style="margin-bottom:8px;">Table ${tableNumber}</h2>
+        <p style="color:#888;margin-bottom:20px;">Scan to order & request service</p>
+        <img src="${canvas.toDataURL()}" style="width:250px;height:250px;">
+        <p style="margin-top:20px;font-size:12px;color:#aaa;">DineEasy Restaurant System</p>
+        <script>window.onload=()=>{window.print();window.close()}<\/script>
+      </body></html>`);
+  }
+
+  // ===== SOCKET: Real-time =====
+  socket.on('new-order', () => { if (document.getElementById('page-dashboard').classList.contains('active')) loadDashboard(); });
+  socket.on('new-request', () => { if (document.getElementById('page-dashboard').classList.contains('active')) loadDashboard(); });
+  socket.on('new-complaint', () => { loadComplaints(); });
+
+  // Refresh dashboard every 30s
+  setInterval(() => {
+    if (document.getElementById('page-dashboard').classList.contains('active')) loadDashboard();
+  }, 30000);
+
+  // Init
+  loadDashboard();
+</script>
+</body>
+</html>
+```
+
+---
+
+Open it at:
+```
+http://localhost:3000/admin/index.html
