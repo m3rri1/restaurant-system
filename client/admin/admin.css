@@ -1,6 +1,6 @@
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: #f4f6fb; color: #1a1a1a; }
+    body { font-family: 'Inter', sans-serif; background: #f4f6fb; color: #1a1a1a; }
 
     .header {
       background: #0f172a;
