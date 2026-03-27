@@ -3,15 +3,21 @@ const router = express.Router();
 const Order = require('../models/Order');
 
 // Place new order
+// Place new order
 router.post('/place', async (req, res) => {
   const { tableNumber, items } = req.body;
   const totalPrice = items.reduce((sum, item) => sum + (item.price * item.qty), 0);
   const order = new Order({ tableNumber, items, totalPrice });
   await order.save();
 
-  // Real-time notify kitchen/waiter
   const io = req.app.get('io');
   io.emit('new-order', order);
+
+  // Lock order after 90 seconds
+  setTimeout(async () => {
+    await Order.findByIdAndUpdate(order._id, { modifiable: false });
+    io.emit('order-locked', { orderId: order._id, tableNumber });
+  }, 90 * 1000);
 
   res.json({ message: 'Order placed', order });
 });

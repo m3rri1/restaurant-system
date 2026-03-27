@@ -214,15 +214,95 @@ function renderCart() {
 async function placeOrder() {
   const items = Object.values(cart).map(i => ({ name: i.name, qty: i.qty, price: i.price }));
   if (!items.length) { showToast('Your cart is empty'); return; }
-  await fetch(`${API}/orders/place`, {
+
+  const res = await fetch(`${API}/orders/place`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tableNumber: TABLE_NUMBER, items })
   });
+  const data = await res.json();
+
   cart = {};
   updateCartBar();
   showToast('Order placed successfully ✓');
+
+  // Start 90 second modification countdown
+  startModifyCountdown(data.order._id);
+
   setTimeout(() => showScreen('screen-home'), 1200);
+}
+
+function startModifyCountdown(orderId) {
+  let secondsLeft = 90;
+
+  // Show countdown banner on home screen
+  const banner = document.createElement('div');
+  banner.id = 'modify-banner';
+  banner.style.cssText = `
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: #1B2B4B;
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 999;
+    font-size: 13px;
+    font-weight: 500;
+  `;
+  banner.innerHTML = `
+    <span>Modify order? <strong id="countdown-timer">1:30</strong> left</span>
+    <button onclick="requestModification('${orderId}')" style="
+      background: white;
+      color: #1B2B4B;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    ">Modify</button>
+  `;
+  document.body.appendChild(banner);
+
+  const interval = setInterval(() => {
+    secondsLeft--;
+    const mins = Math.floor(secondsLeft / 60);
+    const secs = secondsLeft % 60;
+    const timerEl = document.getElementById('countdown-timer');
+    if (timerEl) timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+    if (secondsLeft <= 0) {
+      clearInterval(interval);
+      const b = document.getElementById('modify-banner');
+      if (b) {
+        b.innerHTML = `<span style="width:100%;text-align:center;color:rgba(255,255,255,0.7);">Order locked — modification window closed</span>`;
+        setTimeout(() => b.remove(), 2000);
+      }
+    }
+  }, 1000);
+
+  // Also lock if server sends order-locked event
+  socket.on('order-locked', (data) => {
+    if (data.tableNumber === TABLE_NUMBER) {
+      clearInterval(interval);
+      const b = document.getElementById('modify-banner');
+      if (b) b.remove();
+    }
+  });
+}
+
+async function requestModification(orderId) {
+  await fetch(`${API}/requests/new`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tableNumber: TABLE_NUMBER, type: 'Order Modification Requested' })
+  });
+  showToast('Waiter notified to modify your order ✓');
+  const b = document.getElementById('modify-banner');
+  if (b) b.remove();
 }
 
 // Physical menu

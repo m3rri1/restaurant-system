@@ -306,19 +306,39 @@
 </div>
 
 <!-- ===== MENU ===== -->
+<!-- MENU PAGE -->
 <div class="page" id="page-menu">
   <div class="form-card">
     <h3>➕ Add Menu Item</h3>
     <div class="form-row">
       <input class="form-input" id="item-name" placeholder="Item name">
-      <input class="form-input" id="item-category" placeholder="Category (e.g. Starters)">
+      <input class="form-input" id="item-category" placeholder="Category">
     </div>
     <div class="form-row">
       <input class="form-input" id="item-price" type="number" placeholder="Price (₹)">
       <input class="form-input" id="item-desc" placeholder="Description (optional)">
-      <button class="btn-add" onclick="addMenuItem()">Add</button>
+    </div>
+    <div class="form-row">
+      <div style="flex:1;">
+        <label style="font-size:13px;color:#888;display:block;margin-bottom:6px;">Food Photo</label>
+        <input type="file" id="item-image" accept="image/*" style="
+          width:100%;
+          padding:8px;
+          border:2px dashed #eee;
+          border-radius:10px;
+          font-size:13px;
+          cursor:pointer;
+        ">
+        <div id="image-preview" style="margin-top:8px;display:none;">
+          <img id="preview-img" style="width:80px;height:80px;border-radius:10px;object-fit:cover;">
+        </div>
+      </div>
+    </div>
+    <div class="form-row" style="margin-top:8px;">
+      <button class="btn-add" onclick="addMenuItem()" id="add-btn">Add Item</button>
     </div>
   </div>
+
   <div class="section-header"><h2>Menu Items</h2></div>
   <div class="menu-list" id="menu-list"></div>
 </div>
