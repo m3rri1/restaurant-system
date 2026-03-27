@@ -323,27 +323,27 @@ async function loadMenu() {
           <p>${item.category} ${item.description ? '· ' + item.description : ''}</p>
         </div>
       </div>
-      <div class="menu-row-right">
+      <div class="menu-row-right" style="display:flex; align-items:center; gap:8px;">
         <span class="price-tag">₹${item.price}</span>
         
         <button 
           onclick="toggleItem('${item._id}')" 
-          style="
-            border: none;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            width: 120px;
-            text-align: center;
-            background-color: ${item.available === false ? '#fee2e2' : '#dcfce7'};
-            color: ${item.available === false ? '#ef4444' : '#16a34a'};
-          "
+          style="border:none; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; width:120px; text-align:center; background-color: ${item.available === false ? '#fee2e2' : '#dcfce7'}; color: ${item.available === false ? '#ef4444' : '#16a34a'};"
         >
           ${item.available === false ? '🔴 Out of Stock' : '🟢 Live'}
         </button>
+
+        <input type="file" id="photo-upload-${item._id}" accept="image/*" style="display:none;" onchange="updateItemPhoto('${item._id}')">
+        <button onclick="document.getElementById('photo-upload-${item._id}').click()" style="
+          background:#f1f5f9;
+          color:#475569;
+          border:none;
+          border-radius:8px;
+          padding:5px 12px;
+          font-size:12px;
+          font-weight:700;
+          cursor:pointer;
+        ">📷 Photo</button>
 
         <button onclick="deleteItem('${item._id}')" style="
           background:#fee2e2;
@@ -359,16 +359,39 @@ async function loadMenu() {
     </div>`).join('');
 }
 
-async function deleteItem(id) {
-  if (!confirm('Delete this item? This cannot be undone.')) return;
-  await fetch(`${API}/menu/delete/${id}`, { method: 'DELETE' });
-  loadMenu();
-}
-  async function toggleItem(id) {
-    await fetch(`${API}/menu/toggle/${id}`, { method: 'PUT' });
-    loadMenu();
-  }
+async function updateItemPhoto(id) {
+    const fileInput = document.getElementById(`photo-upload-${id}`);
+    const file = fileInput.files[0];
+    
+    if (!file) return; 
 
+    const btn = fileInput.nextElementSibling;
+    const originalText = btn.textContent;
+    btn.textContent = '⏳...';
+    btn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const res = await fetch(`${API}/menu/update/${id}`, {
+        method: 'PUT',
+        body: formData
+      });
+      
+      if (res.ok) {
+        loadMenu(); 
+      } else {
+        alert('Failed to upload photo.');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('An error occurred while uploading.');
+    } finally {
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
+  }
   // ===== COMPLAINTS =====
   async function loadComplaints() {
     const res = await fetch(`${API}/complaints/all`);

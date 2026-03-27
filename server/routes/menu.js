@@ -40,6 +40,18 @@ router.put('/toggle/:id', async (req, res) => {
   res.json(item);
 });
 
+// Inside server/routes/menu.js
+router.put('/update/:id', upload.single('image'), async (req, res) => {
+  try {
+    const updateData = {};
+    if (req.file) updateData.image = req.file.path;
+    const item = await MenuItem.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    res.json(item);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Delete item
 router.delete('/delete/:id', async (req, res) => {
   try {
