@@ -310,6 +310,7 @@ async function loadMenu() {
     container.innerHTML = `<div class="empty-state"><div class="icon">🍴</div><p>No menu items yet</p></div>`;
     return;
   }
+  
   container.innerHTML = items.map(item => `
     <div class="menu-row">
       <div style="display:flex;align-items:center;gap:12px;">
@@ -324,10 +325,26 @@ async function loadMenu() {
       </div>
       <div class="menu-row-right">
         <span class="price-tag">₹${item.price}</span>
-        <button class="toggle-btn ${item.available ? 'available' : 'unavailable'}"
-          onclick="toggleItem('${item._id}')">
-          ${item.available ? '✓ Available' : '✗ Off'}
+        
+        <button 
+          onclick="toggleItem('${item._id}')" 
+          style="
+            border: none;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 120px;
+            text-align: center;
+            background-color: ${item.available === false ? '#fee2e2' : '#dcfce7'};
+            color: ${item.available === false ? '#ef4444' : '#16a34a'};
+          "
+        >
+          ${item.available === false ? '🔴 Out of Stock' : '🟢 Live'}
         </button>
+
         <button onclick="deleteItem('${item._id}')" style="
           background:#fee2e2;
           color:#ef4444;
