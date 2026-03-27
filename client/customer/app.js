@@ -38,9 +38,17 @@ function showScreen(id) {
   if (navMap[id]) document.getElementById(navMap[id]).classList.add('active');
   window.scrollTo(0, 0);
 
-  if (id === 'screen-order') {
+if (id === 'screen-order') {
     loadMenu();
-    setTimeout(() => document.getElementById('physical-menu-popup').classList.add('show'), 1000);
+    
+    // Check if the popup has already been shown this session
+    if (!sessionStorage.getItem('menuPopupShown')) {
+      setTimeout(() => {
+        document.getElementById('physical-menu-popup').classList.add('show');
+        // Mark it as shown so it never pops up again during this visit
+        sessionStorage.setItem('menuPopupShown', 'true');
+      }, 1000);
+    }
   }
   if (id === 'screen-bill') loadBill();
   if (id === 'screen-feedback') loadFeedbackItems();
