@@ -133,7 +133,8 @@ function renderMenuItemsFiltered(items) {
             <div class="menu-card-bottom">
               <div class="item-price">₹${item.price}</div>
               ${qty === 0
-                ? `<button class="add-btn" onclick="addToCart('${item._id}','${item.name.replace(/'/g,"\\'")}',${item.price})">+</button>`
+                /* FIX: Added '${item.image}' to the line below */
+                ? `<button class="add-btn" onclick="addToCart('${item._id}','${item.name.replace(/'/g,"\\'")}',${item.price},'${item.image || ''}')">+</button>`
                 : `<div class="qty-control">
                     <button class="qty-btn" onclick="changeQty('${item._id}',-1)">−</button>
                     <span class="qty-num">${qty}</span>
@@ -149,8 +150,10 @@ function renderMenuItemsFiltered(items) {
   document.getElementById('menu-items-list').innerHTML = html;
 }
 
-function addToCart(id, name, price) {
-  cart[id] = { name, price, qty: 1 };
+function addToCart(id, name, price, image) {
+  // Add image to the object being saved
+  cart[id] = { name, price, image, qty: 1 }; 
+  
   updateCartBar();
   renderMenuItems();
 }
@@ -194,8 +197,11 @@ function renderCart() {
   }
   container.innerHTML = items.map(i => `
     <div class="cart-item">
-      <div class="cart-item-img">
-        <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/></svg>
+      <div class="cart-item-img" style="width: 50px; height: 50px; border-radius: 8px; overflow: hidden; background: #eee; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        ${i.image 
+          ? `<img src="${i.image}" style="width: 100%; height: 100%; object-fit: cover;">`
+          : `<svg viewBox="0 0 24 24" style="width: 24px; height: 24px;"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/></svg>`
+        }
       </div>
       <div class="cart-item-info">
         <h4>${i.name}</h4>
