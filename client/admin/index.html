@@ -247,29 +247,6 @@
   }
 
   // ===== MENU =====
-  async function loadMenu() {
-    const res = await fetch(`${API}/menu/all`);
-    const items = await res.json();
-    const container = document.getElementById('menu-list');
-    if (!items.length) {
-      container.innerHTML = `<div class="empty-state"><div class="icon">🍴</div><p>No menu items yet</p></div>`;
-      return;
-    }
-    container.innerHTML = items.map(item => `
-      <div class="menu-row">
-        <div class="menu-row-info">
-          <h4>${item.name}</h4>
-          <p>${item.category} ${item.description ? '· ' + item.description : ''}</p>
-        </div>
-        <div class="menu-row-right">
-          <span class="price-tag">₹${item.price}</span>
-          <button class="toggle-btn ${item.available ? 'available' : 'unavailable'}"
-            onclick="toggleItem('${item._id}')">
-            ${item.available ? '✓ Available' : '✗ Unavailable'}
-          </button>
-        </div>
-      </div>`).join('');
-  }
 
 // Preview image before upload
 document.getElementById('item-image').addEventListener('change', function() {
