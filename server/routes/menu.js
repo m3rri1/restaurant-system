@@ -3,9 +3,9 @@ const router = express.Router();
 const MenuItem = require('../models/MenuItem');
 const { upload, cloudinary } = require('../config/cloudinary');
 
-// Get available items (customer)
+// Get ALL items so the customer app can show the "Sold Out" badge
 router.get('/', async (req, res) => {
-  const items = await MenuItem.find({ available: true });
+  const items = await MenuItem.find(); // Filter removed!
   res.json(items);
 });
 
