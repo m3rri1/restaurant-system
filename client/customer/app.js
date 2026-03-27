@@ -117,11 +117,19 @@ function renderMenuItemsFiltered(items) {
   let html = '';
   Object.entries(grouped).forEach(([cat, catItems]) => {
     if (currentCategory === 'All') html += `<div class="menu-section-title">${cat}</div>`;
+    
     catItems.forEach(item => {
       const qty = cart[item._id]?.qty || 0;
+      
+      // CHECK IF ITEM IS OUT OF STOCK
+      const isOut = item.available === false;
+
       html += `
-        <div class="menu-card">
-          <div class="menu-img placeholder" id="img-${item._id}">
+        <div class="menu-card ${isOut ? 'is-sold-out' : ''}">
+          <div class="menu-img placeholder" id="img-${item._id}" style="position: relative;">
+            
+            ${isOut ? `<div class="sold-out-badge">Sold Out</div>` : ''}
+            
             ${item.image
               ? `<img src="${item.image}" alt="${item.name}">`
               : `<svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>`
@@ -132,14 +140,17 @@ function renderMenuItemsFiltered(items) {
             <p>${item.description || item.category || ''}</p>
             <div class="menu-card-bottom">
               <div class="item-price">₹${item.price}</div>
-              ${qty === 0
-                /* FIX: Added '${item.image}' to the line below */
-                ? `<button class="add-btn" onclick="addToCart('${item._id}','${item.name.replace(/'/g,"\\'")}',${item.price},'${item.image || ''}')">+</button>`
-                : `<div class="qty-control">
-                    <button class="qty-btn" onclick="changeQty('${item._id}',-1)">−</button>
-                    <span class="qty-num">${qty}</span>
-                    <button class="qty-btn" onclick="changeQty('${item._id}',1)">+</button>
-                  </div>`
+              
+              ${isOut 
+                ? `<button class="add-btn" disabled style="background:#eee; color:#aaa; cursor:not-allowed;">✖</button>`
+                : (qty === 0
+                    ? `<button class="add-btn" onclick="addToCart('${item._id}','${item.name.replace(/'/g,"\\'")}',${item.price},'${item.image || ''}')">+</button>`
+                    : `<div class="qty-control">
+                        <button class="qty-btn" onclick="changeQty('${item._id}',-1)">−</button>
+                        <span class="qty-num">${qty}</span>
+                        <button class="qty-btn" onclick="changeQty('${item._id}',1)">+</button>
+                      </div>`
+                  )
               }
             </div>
           </div>
@@ -149,7 +160,6 @@ function renderMenuItemsFiltered(items) {
 
   document.getElementById('menu-items-list').innerHTML = html;
 }
-
 function addToCart(id, name, price, image) {
   // Add image to the object being saved
   cart[id] = { name, price, image, qty: 1 }; 

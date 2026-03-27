@@ -866,3 +866,26 @@ body {
 }
 .empty p { font-size: 15px; font-weight: 500; }
 .empty span { font-size: 13px; }
+
+/* Out of Stock visual effects */
+.is-sold-out {
+  opacity: 0.6;
+  pointer-events: none; /* Physically prevents the user from clicking the card */
+  filter: grayscale(80%);
+}
+
+.sold-out-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 13px;
+  z-index: 10;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
