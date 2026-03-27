@@ -248,7 +248,7 @@
 
   // ===== MENU =====
   async function loadMenu() {
-    const res = await fetch(`${API}/menu`);
+    const res = await fetch(`${API}/menu/all`);
     const items = await res.json();
     const container = document.getElementById('menu-list');
     if (!items.length) {
