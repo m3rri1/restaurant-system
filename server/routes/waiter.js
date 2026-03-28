@@ -16,10 +16,11 @@ router.post('/create', async (req, res) => {
 });
 
 // Login
+// Login
 router.post('/login', async (req, res) => {
   try {
-    const waiter = await Waiter.findOne({ email: req.body.email });
-    if (!waiter) return res.status(404).json({ error: 'Waiter not found' });
+    const waiter = await Waiter.findOne({ username: req.body.username });
+    if (!waiter) return res.status(404).json({ error: 'Username not found' });
     const valid = await bcrypt.compare(req.body.password, waiter.password);
     if (!valid) return res.status(401).json({ error: 'Wrong password' });
     const token = jwt.sign(
@@ -32,6 +33,7 @@ router.post('/login', async (req, res) => {
       waiter: {
         id: waiter._id,
         name: waiter.name,
+        username: waiter.username,
         assignedTables: waiter.assignedTables,
         isAvailable: waiter.isAvailable
       }

@@ -247,10 +247,10 @@
   <div class="login-card">
     <h1>🧑‍🍳 Waiter Login</h1>
     <p>Sign in to your waiter account</p>
-    <input class="login-input" type="email" id="login-email" placeholder="Email address">
+    <input class="login-input" type="text" id="login-username" placeholder="Username">
     <input class="login-input" type="password" id="login-password" placeholder="Password">
     <button class="login-btn" onclick="login()">Sign In</button>
-    <div class="login-error" id="login-error">Invalid email or password</div>
+    <div class="login-error" id="login-error">Invalid username       or password</div>
   </div>
 </div>
 
@@ -318,30 +318,29 @@
   }, 1000);
 
   // ===== LOGIN =====
-  async function login() {
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
-    const errEl = document.getElementById('login-error');
-    errEl.style.display = 'none';
+ async function login() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
 
-    const res = await fetch(`${API}/waiter/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
+  const res = await fetch(`${API}/waiter/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
 
-    if (data.error) {
-      errEl.style.display = 'block';
-      errEl.textContent = data.error;
-      return;
-    }
-
-    currentWaiter = data.waiter;
-    localStorage.setItem('waiter', JSON.stringify(data.waiter));
-    showDashboard();
+  if (data.error) {
+    errEl.style.display = 'block';
+    errEl.textContent = data.error;
+    return;
   }
 
+  currentWaiter = data.waiter;
+  localStorage.setItem('waiter', JSON.stringify(data.waiter));
+  showDashboard();
+}
   function logout() {
     localStorage.removeItem('waiter');
     currentWaiter = null;

@@ -532,7 +532,7 @@ async function loadWaiters() {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <div>
           <div style="font-size:15px;font-weight:700;">${w.name}</div>
-          <div style="font-size:12px;color:#888;">${w.email}</div>
+          <div style="font-size:12px;color:#888;">${w.username}</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
           <span style="
@@ -570,20 +570,20 @@ async function loadWaiters() {
 
 async function createWaiter() {
   const name = document.getElementById('waiter-name').value.trim();
-  const email = document.getElementById('waiter-email').value.trim();
+  const username = document.getElementById('waiter-username').value.trim();
   const password = document.getElementById('waiter-password').value;
-  if (!name || !email || !password) return alert('All fields required!');
+  if (!name || !username || !password) return alert('All fields required!');
 
   const res = await fetch(`${API}/waiter/create`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password })
+    body: JSON.stringify({ name, username, password })
   });
   const data = await res.json();
   if (data.error) return alert(data.error);
 
   document.getElementById('waiter-name').value = '';
-  document.getElementById('waiter-email').value = '';
+  document.getElementById('waiter-username').value = '';
   document.getElementById('waiter-password').value = '';
   loadWaiters();
 }
@@ -623,17 +623,17 @@ async function deleteWaiter(id) {
 </script>
 <!-- WAITERS PAGE -->
 <div class="page" id="page-waiters">
-  <div class="form-card">
-    <h3>➕ Add New Waiter</h3>
-    <div class="form-row">
-      <input class="form-input" id="waiter-name" placeholder="Full name">
-      <input class="form-input" id="waiter-email" placeholder="Email">
-    </div>
-    <div class="form-row">
-      <input class="form-input" id="waiter-password" type="password" placeholder="Password">
-      <button class="btn-add" onclick="createWaiter()">Add Waiter</button>
-    </div>
+<div class="form-card">
+  <h3>➕ Add New Waiter</h3>
+  <div class="form-row">
+    <input class="form-input" id="waiter-name" placeholder="Full name">
+    <input class="form-input" id="waiter-username" placeholder="Username (e.g. ravi01)">
   </div>
+  <div class="form-row">
+    <input class="form-input" id="waiter-password" type="password" placeholder="Password">
+    <button class="btn-add" onclick="createWaiter()">Add Waiter</button>
+  </div>
+</div>
 
   <div class="section-header"><h2>All Waiters</h2></div>
   <div id="waiters-list"></div>
