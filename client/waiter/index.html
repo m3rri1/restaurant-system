@@ -1,17 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="../config.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Waiter Dashboard</title>
+  <title>Waiter — DineEasy</title>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="../config.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: #f4f6fb; color: #1a1a1a; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Segoe UI',sans-serif; background:#f4f6fb; color:#1a1a1a; }
 
+    /* LOGIN */
+    .login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f172a;
+      padding: 20px;
+    }
+    .login-card {
+      background: white;
+      border-radius: 20px;
+      padding: 36px 28px;
+      width: 100%;
+      max-width: 380px;
+    }
+    .login-card h1 {
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .login-card p {
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+    .login-input {
+      width: 100%;
+      padding: 13px 16px;
+      border: 2px solid #eee;
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: inherit;
+      margin-bottom: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .login-input:focus { border-color: #ff6b35; }
+    .login-btn {
+      width: 100%;
+      background: #0f172a;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      margin-top: 4px;
+    }
+    .login-error {
+      color: #ef4444;
+      font-size: 13px;
+      margin-top: 10px;
+      text-align: center;
+      display: none;
+    }
+
+    /* DASHBOARD */
+    .dashboard { display: none; }
     .header {
-      background: #1e293b;
+      background: #0f172a;
       color: white;
       padding: 16px 20px;
       display: flex;
@@ -21,10 +82,26 @@
       top: 0;
       z-index: 100;
     }
-    .header h1 { font-size: 18px; }
-    .header .subtitle { font-size: 12px; opacity: 0.6; margin-top: 2px; }
-    .online-dot { width: 10px; height: 10px; background: #22c55e; border-radius: 50%; display: inline-block; margin-right: 6px; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .header-left h1 { font-size: 16px; font-weight: 700; }
+    .header-left .sub { font-size: 12px; opacity: 0.5; margin-top: 2px; }
+    .waiter-name {
+      background: rgba(255,255,255,0.1);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logout-btn {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.5);
+      cursor: pointer;
+      font-size: 13px;
+      padding: 0;
+    }
 
     .tabs {
       display: flex;
@@ -43,7 +120,6 @@
       color: #888;
       cursor: pointer;
       border-bottom: 3px solid transparent;
-      transition: all 0.2s;
     }
     .tab.active { color: #ff6b35; border-bottom-color: #ff6b35; }
     .badge {
@@ -59,7 +135,27 @@
     .section { display: none; }
     .section.active { display: block; }
 
-    /* Cards */
+    .assigned-tables {
+      background: white;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .assigned-tables span { font-size: 13px; color: #888; font-weight: 600; }
+    .table-tag {
+      background: #0f172a;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
     .card {
       background: white;
       border-radius: 14px;
@@ -79,15 +175,10 @@
       align-items: flex-start;
       margin-bottom: 10px;
     }
-    .table-num {
-      font-size: 18px;
-      font-weight: 800;
-      color: #ff6b35;
-    }
+    .table-num { font-size: 18px; font-weight: 800; color: #ff6b35; }
     .card.request .table-num { color: #3b82f6; }
     .time-ago { font-size: 12px; color: #aaa; }
 
-    .item-list { margin: 8px 0; }
     .item-row {
       display: flex;
       justify-content: space-between;
@@ -97,7 +188,6 @@
       color: #444;
     }
     .item-row:last-child { border: none; }
-
     .total-row {
       display: flex;
       justify-content: space-between;
@@ -106,13 +196,7 @@
       color: #ff6b35;
       margin-top: 8px;
     }
-
-    .request-type {
-      font-size: 16px;
-      font-weight: 700;
-      color: #1e293b;
-      margin-bottom: 4px;
-    }
+    .request-type { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
 
     .card-actions { display: flex; gap: 8px; margin-top: 12px; }
     .btn {
@@ -123,13 +207,11 @@
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
-      transition: opacity 0.2s;
     }
-    .btn:active { opacity: 0.8; }
-    .btn-accept { background: #dbeafe; color: #2563eb; }
-    .btn-done { background: #dcfce7; color: #16a34a; }
     .btn-preparing { background: #fef3c7; color: #d97706; }
     .btn-served { background: #dcfce7; color: #16a34a; }
+    .btn-accept { background: #dbeafe; color: #2563eb; }
+    .btn-done { background: #dcfce7; color: #16a34a; }
 
     .status-pill {
       padding: 3px 10px;
@@ -140,18 +222,12 @@
     .pill-pending { background: #fef3c7; color: #d97706; }
     .pill-accepted { background: #dbeafe; color: #2563eb; }
     .pill-preparing { background: #dbeafe; color: #2563eb; }
-    .pill-done { background: #dcfce7; color: #16a34a; }
     .pill-served { background: #dcfce7; color: #16a34a; }
+    .pill-done { background: #dcfce7; color: #16a34a; }
 
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: #aaa;
-    }
-    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
-    .empty-state p { font-size: 15px; }
+    .empty-state { text-align:center; padding:60px 20px; color:#aaa; }
+    .empty-state .icon { font-size:48px; margin-bottom:12px; }
 
-    /* Notification sound visual */
     .new-alert {
       background: #ff6b35;
       color: white;
@@ -160,69 +236,140 @@
       font-weight: 700;
       font-size: 14px;
       display: none;
-      animation: flashBg 0.5s ease;
     }
-    @keyframes flashBg { 0%,100%{background:#ff6b35} 50%{background:#ef4444} }
     .new-alert.show { display: block; }
   </style>
 </head>
 <body>
 
-<div class="header">
-  <div>
-    <h1>🧑‍🍳 Waiter Dashboard</h1>
-    <div class="subtitle"><span class="online-dot"></span>Live — updates in real time</div>
-  </div>
-  <div style="text-align:right;font-size:13px;opacity:0.7;" id="clock"></div>
-</div>
-
-<div class="new-alert" id="new-alert">🔔 New request received!</div>
-
-<div class="tabs">
-  <div class="tab active" onclick="switchTab('orders')" id="tab-orders">
-    🍽️ Orders <span class="badge" id="orders-badge">0</span>
-  </div>
-  <div class="tab" onclick="switchTab('requests')" id="tab-requests">
-    🛎️ Requests <span class="badge" id="requests-badge">0</span>
-  </div>
-  <div class="tab" onclick="switchTab('done')" id="tab-done">
-    ✅ Done
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <h1>🧑‍🍳 Waiter Login</h1>
+    <p>Sign in to your waiter account</p>
+    <input class="login-input" type="email" id="login-email" placeholder="Email address">
+    <input class="login-input" type="password" id="login-password" placeholder="Password">
+    <button class="login-btn" onclick="login()">Sign In</button>
+    <div class="login-error" id="login-error">Invalid email or password</div>
   </div>
 </div>
 
-<div class="content">
-
-  <!-- ORDERS TAB -->
-  <div class="section active" id="section-orders">
-    <div id="orders-list"></div>
+<!-- DASHBOARD -->
+<div class="dashboard" id="dashboard">
+  <div class="header">
+    <div class="header-left">
+      <h1>🧑‍🍳 Waiter Dashboard</h1>
+      <div class="sub" id="clock"></div>
+    </div>
+    <div class="waiter-name">
+      <span id="waiter-name-display">Waiter</span>
+      <button class="logout-btn" onclick="logout()">Sign out</button>
+    </div>
   </div>
 
-  <!-- REQUESTS TAB -->
-  <div class="section" id="section-requests">
-    <div id="requests-list"></div>
+  <div class="new-alert" id="new-alert">🔔 New request!</div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('orders')" id="tab-orders">
+      🍽️ Orders <span class="badge" id="orders-badge">0</span>
+    </div>
+    <div class="tab" onclick="switchTab('requests')" id="tab-requests">
+      🛎️ Requests <span class="badge" id="requests-badge">0</span>
+    </div>
+    <div class="tab" onclick="switchTab('done')" id="tab-done">
+      ✅ Done
+    </div>
   </div>
 
-  <!-- DONE TAB -->
-  <div class="section" id="section-done">
-    <div id="done-list"></div>
-  </div>
+  <div class="content">
+    <div class="assigned-tables" id="assigned-tables-bar">
+      <span>YOUR TABLES:</span>
+    </div>
 
+    <div class="section active" id="section-orders">
+      <div id="orders-list"></div>
+    </div>
+    <div class="section" id="section-requests">
+      <div id="requests-list"></div>
+    </div>
+    <div class="section" id="section-done">
+      <div id="done-list"></div>
+    </div>
+  </div>
 </div>
 
 <script>
   const API = CONFIG.API;
   const socket = io(CONFIG.SOCKET);
 
-  // Clock
-  function updateClock() {
-    const now = new Date();
-    document.getElementById('clock').textContent =
-      now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-  }
-  setInterval(updateClock, 1000);
-  updateClock();
+  let currentWaiter = null;
 
-  // Tab switching
+  // Check if already logged in
+  const saved = localStorage.getItem('waiter');
+  if (saved) {
+    currentWaiter = JSON.parse(saved);
+    showDashboard();
+  }
+
+  // Clock
+  setInterval(() => {
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+  }, 1000);
+
+  // ===== LOGIN =====
+  async function login() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-error');
+    errEl.style.display = 'none';
+
+    const res = await fetch(`${API}/waiter/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      errEl.style.display = 'block';
+      errEl.textContent = data.error;
+      return;
+    }
+
+    currentWaiter = data.waiter;
+    localStorage.setItem('waiter', JSON.stringify(data.waiter));
+    showDashboard();
+  }
+
+  function logout() {
+    localStorage.removeItem('waiter');
+    currentWaiter = null;
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+  }
+
+  function showDashboard() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    document.getElementById('waiter-name-display').textContent = currentWaiter.name;
+
+    // Show assigned tables
+    const bar = document.getElementById('assigned-tables-bar');
+    if (currentWaiter.assignedTables.length) {
+      const tags = currentWaiter.assignedTables
+        .map(t => `<span class="table-tag">T${t}</span>`)
+        .join('');
+      bar.innerHTML = `<span>YOUR TABLES:</span>${tags}`;
+    } else {
+      bar.innerHTML = `<span style="color:#aaa">No tables assigned yet</span>`;
+    }
+
+    loadOrders();
+    loadRequests();
+  }
+
+  // ===== TAB SWITCHING =====
   function switchTab(tab) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -230,7 +377,6 @@
     document.getElementById('section-' + tab).classList.add('active');
   }
 
-  // Time ago
   function timeAgo(date) {
     const diff = Math.floor((Date.now() - new Date(date)) / 1000);
     if (diff < 60) return `${diff}s ago`;
@@ -238,13 +384,11 @@
     return `${Math.floor(diff/3600)}h ago`;
   }
 
-  // Flash new alert
   function flashAlert(msg) {
     const el = document.getElementById('new-alert');
     el.textContent = '🔔 ' + msg;
     el.classList.add('show');
     setTimeout(() => el.classList.remove('show'), 3000);
-    // Try to play a beep
     try {
       const ctx = new AudioContext();
       const o = ctx.createOscillator();
@@ -257,114 +401,111 @@
     } catch(e) {}
   }
 
-  // ===== LOAD ORDERS =====
+  // ===== LOAD ORDERS (only assigned tables) =====
   async function loadOrders() {
     const res = await fetch(`${API}/orders/all`);
-    const orders = await res.json();
+    const allOrders = await res.json();
 
-    const active = orders.filter(o => o.status !== 'served');
-    const done = orders.filter(o => o.status === 'served');
+    // Filter to only this waiter's assigned tables
+    const myTables = currentWaiter.assignedTables;
+    const myOrders = allOrders.filter(o => myTables.includes(o.tableNumber));
+
+    const active = myOrders.filter(o => o.status !== 'served');
+    const done = myOrders.filter(o => o.status === 'served');
 
     document.getElementById('orders-badge').textContent = active.length;
 
     const container = document.getElementById('orders-list');
     if (!active.length) {
-      container.innerHTML = `<div class="empty-state"><div class="icon">🍽️</div><p>No active orders right now</p></div>`;
-      return;
-    }
-
-    container.innerHTML = active.map(order => `
-      <div class="card" id="order-${order._id}">
-        <div class="card-header">
-          <div>
-            <div class="table-num">Table ${order.tableNumber}</div>
-            <div class="time-ago">${timeAgo(order.createdAt)}</div>
+      container.innerHTML = `<div class="empty-state"><div class="icon">🍽️</div><p>No active orders for your tables</p></div>`;
+    } else {
+      container.innerHTML = active.map(order => `
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="table-num">Table ${order.tableNumber}</div>
+              <div class="time-ago">${timeAgo(order.createdAt)}</div>
+            </div>
+            <span class="status-pill pill-${order.status}">${order.status}</span>
           </div>
-          <span class="status-pill pill-${order.status}">${order.status}</span>
-        </div>
-        <div class="item-list">
-          ${order.items.map(i => `
-            <div class="item-row">
-              <span>${i.name} x${i.qty}</span>
-              <span>₹${i.price * i.qty}</span>
-            </div>`).join('')}
-        </div>
-        <div class="total-row">
-          <span>Total</span>
-          <span>₹${order.totalPrice}</span>
-        </div>
-        <div class="card-actions">
-          ${order.status === 'pending'
-            ? `<button class="btn btn-preparing" onclick="updateOrder('${order._id}', 'preparing')">👨‍🍳 Mark Preparing</button>`
-            : ''}
-          ${order.status === 'preparing'
-            ? `<button class="btn btn-served" onclick="updateOrder('${order._id}', 'served')">✅ Mark Served</button>`
-            : ''}
-        </div>
-      </div>
-    `).join('');
+          <div>
+            ${order.items.map(i => `
+              <div class="item-row">
+                <span>${i.name} x${i.qty}</span>
+                <span>₹${i.price * i.qty}</span>
+              </div>`).join('')}
+          </div>
+          <div class="total-row">
+            <span>Total</span><span>₹${order.totalPrice}</span>
+          </div>
+          <div class="card-actions">
+            ${order.status === 'pending'
+              ? `<button class="btn btn-preparing" onclick="updateOrder('${order._id}','preparing')">👨‍🍳 Preparing</button>`
+              : ''}
+            ${order.status === 'preparing'
+              ? `<button class="btn btn-served" onclick="updateOrder('${order._id}','served')">✅ Served</button>`
+              : ''}
+          </div>
+        </div>`).join('');
+    }
 
     // Done orders
     const doneContainer = document.getElementById('done-list');
-    if (!done.length) {
-      doneContainer.innerHTML = `<div class="empty-state"><div class="icon">✅</div><p>No completed orders yet</p></div>`;
-      return;
-    }
-    doneContainer.innerHTML = done.map(order => `
-      <div class="card done">
-        <div class="card-header">
-          <div>
-            <div class="table-num">Table ${order.tableNumber}</div>
-            <div class="time-ago">${timeAgo(order.createdAt)}</div>
-          </div>
-          <span class="status-pill pill-served">served</span>
-        </div>
-        <div class="item-list">
-          ${order.items.map(i => `<div class="item-row"><span>${i.name} x${i.qty}</span><span>₹${i.price * i.qty}</span></div>`).join('')}
-        </div>
-        <div class="total-row"><span>Total</span><span>₹${order.totalPrice}</span></div>
-      </div>
-    `).join('');
+    doneContainer.innerHTML = done.length
+      ? done.map(order => `
+          <div class="card done">
+            <div class="card-header">
+              <div>
+                <div class="table-num">Table ${order.tableNumber}</div>
+                <div class="time-ago">${timeAgo(order.createdAt)}</div>
+              </div>
+              <span class="status-pill pill-served">served</span>
+            </div>
+            <div>${order.items.map(i => `<div class="item-row"><span>${i.name} x${i.qty}</span><span>₹${i.price * i.qty}</span></div>`).join('')}</div>
+          </div>`).join('')
+      : `<div class="empty-state"><div class="icon">✅</div><p>No completed orders yet</p></div>`;
   }
 
-  // ===== LOAD REQUESTS =====
+  // ===== LOAD REQUESTS (only assigned tables) =====
   async function loadRequests() {
     const res = await fetch(`${API}/requests/all`);
-    const requests = await res.json();
+    const allRequests = await res.json();
 
-    const active = requests.filter(r => r.status !== 'done');
-    const done = requests.filter(r => r.status === 'done');
+    // Filter to only this waiter's tables
+    const myTables = currentWaiter.assignedTables;
+    const myRequests = allRequests.filter(r => myTables.includes(r.tableNumber));
+
+    const active = myRequests.filter(r => r.status !== 'done');
+    const done = myRequests.filter(r => r.status === 'done');
 
     document.getElementById('requests-badge').textContent = active.length;
 
     const container = document.getElementById('requests-list');
     if (!active.length) {
-      container.innerHTML = `<div class="empty-state"><div class="icon">🛎️</div><p>No pending requests</p></div>`;
-      return;
+      container.innerHTML = `<div class="empty-state"><div class="icon">🛎️</div><p>No pending requests for your tables</p></div>`;
+    } else {
+      container.innerHTML = active.map(req => `
+        <div class="card request">
+          <div class="card-header">
+            <div>
+              <div class="table-num" style="color:#3b82f6">Table ${req.tableNumber}</div>
+              <div class="time-ago">${timeAgo(req.createdAt)}</div>
+            </div>
+            <span class="status-pill pill-${req.status}">${req.status}</span>
+          </div>
+          <div class="request-type">${req.type}</div>
+          <div class="card-actions">
+            ${req.status === 'pending'
+              ? `<button class="btn btn-accept" onclick="updateRequest('${req._id}','accepted')">👋 Accept</button>`
+              : ''}
+            <button class="btn btn-done" onclick="updateRequest('${req._id}','done')">✅ Done</button>
+          </div>
+        </div>`).join('');
     }
 
-    container.innerHTML = active.map(req => `
-      <div class="card request" id="req-${req._id}">
-        <div class="card-header">
-          <div>
-            <div class="table-num" style="color:#3b82f6">Table ${req.tableNumber}</div>
-            <div class="time-ago">${timeAgo(req.createdAt)}</div>
-          </div>
-          <span class="status-pill pill-${req.status}">${req.status}</span>
-        </div>
-        <div class="request-type">${getRequestIcon(req.type)} ${req.type}</div>
-        <div class="card-actions">
-          ${req.status === 'pending'
-            ? `<button class="btn btn-accept" onclick="updateRequest('${req._id}', 'accepted')">👋 Accept</button>`
-            : ''}
-          <button class="btn btn-done" onclick="updateRequest('${req._id}', 'done')">✅ Done</button>
-        </div>
-      </div>
-    `).join('');
-
-    // Add done requests to done tab too
-    const doneContainer = document.getElementById('done-list');
-    const donereqHTML = done.map(req => `
+    // Add done requests to done tab
+    const doneEl = document.getElementById('done-list');
+    const doneReqHTML = done.map(req => `
       <div class="card request done">
         <div class="card-header">
           <div>
@@ -373,26 +514,11 @@
           </div>
           <span class="status-pill pill-done">done</span>
         </div>
-        <div class="request-type">${getRequestIcon(req.type)} ${req.type}</div>
-      </div>
-    `).join('');
-
-    // Append to done list (don't overwrite orders)
-    const existing = doneContainer.innerHTML;
-    if (donereqHTML) doneContainer.innerHTML = existing + donereqHTML;
+        <div class="request-type">${req.type}</div>
+      </div>`).join('');
+    if (doneReqHTML) doneEl.innerHTML += doneReqHTML;
   }
 
-  function getRequestIcon(type) {
-    const icons = {
-      'Order Modification': '✏️', 'Tissue': '🧻', 'Cutlery': '🍴',
-      'Condiments': '🧂', 'Cleaning': '🧹', 'Bill Request': '💳',
-      'Physical Menu': '📋', 'Bill Incorrect - Please Check': '⚠️',
-      'Other Help': '🙋'
-    };
-    return icons[type] || '📌';
-  }
-
-  // ===== UPDATE ORDER STATUS =====
   async function updateOrder(id, status) {
     await fetch(`${API}/orders/status/${id}`, {
       method: 'PUT',
@@ -402,7 +528,6 @@
     loadOrders();
   }
 
-  // ===== UPDATE REQUEST STATUS =====
   async function updateRequest(id, status) {
     await fetch(`${API}/requests/status/${id}`, {
       method: 'PUT',
@@ -414,28 +539,23 @@
 
   // ===== SOCKET: Real-time =====
   socket.on('new-order', (order) => {
-    flashAlert(`New order from Table ${order.tableNumber}!`);
-    loadOrders();
+    if (currentWaiter?.assignedTables.includes(order.tableNumber)) {
+      flashAlert(`New order from Table ${order.tableNumber}!`);
+      loadOrders();
+    }
   });
 
   socket.on('new-request', (req) => {
-    flashAlert(`Table ${req.tableNumber} needs: ${req.type}`);
-    loadRequests();
+    if (currentWaiter?.assignedTables.includes(req.tableNumber)) {
+      flashAlert(`Table ${req.tableNumber}: ${req.type}`);
+      loadRequests();
+    }
   });
 
   socket.on('order-updated', () => loadOrders());
   socket.on('request-updated', () => loadRequests());
 
-  // ===== REFRESH every 30 seconds as backup =====
   setInterval(() => { loadOrders(); loadRequests(); }, 30000);
-
-  // Init
-  loadOrders();
-  loadRequests();
 </script>
 </body>
 </html>
-```
-
----
-

@@ -26,6 +26,7 @@
   <div class="nav-item" onclick="switchPage('complaints')" id="nav-complaints">📝 Complaints <span class="badge-new" id="complaints-badge" style="display:none">!</span></div>
   <div class="nav-item" onclick="switchPage('feedback')" id="nav-feedback">⭐ Feedback</div>
   <div class="nav-item" onclick="switchPage('qr')" id="nav-qr">📲 QR Codes</div>
+  <div class="nav-item" onclick="switchPage('waiters')" id="nav-waiters">👨‍🍳 Waiters</div>
 </div>
 
 <!-- ===== DASHBOARD ===== -->
@@ -152,6 +153,7 @@
     if (page === 'complaints') loadComplaints();
     if (page === 'feedback') loadFeedback();
     if (page === 'qr') loadQR();
+    if (page === 'waiters') loadWaiters();
   }
 
   function timeAgo(date) {
@@ -509,7 +511,133 @@ async function updateItemPhoto(id) {
 
   // Init
   loadDashboard();
+
+  // ===== WAITERS =====
+async function loadWaiters() {
+  const [waitersRes, tablesRes] = await Promise.all([
+    fetch(`${API}/waiter/all`),
+    fetch(`${API}/tables`)
+  ]);
+  const waiters = await waitersRes.json();
+  const tables = await tablesRes.json();
+
+  const container = document.getElementById('waiters-list');
+  if (!waiters.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">👨‍🍳</div><p>No waiters yet</p></div>`;
+    return;
+  }
+
+  container.innerHTML = waiters.map(w => `
+    <div style="background:white;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;">${w.name}</div>
+          <div style="font-size:12px;color:#888;">${w.email}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="
+            padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;
+            background:${w.isAvailable ? '#dcfce7' : '#fee2e2'};
+            color:${w.isAvailable ? '#16a34a' : '#ef4444'};
+          ">${w.isAvailable ? 'Available' : 'Busy'}</span>
+          <button onclick="deleteWaiter('${w._id}')" style="background:#fee2e2;color:#ef4444;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">Delete</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:600;color:#888;margin-bottom:8px;">ASSIGNED TABLES</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;" id="tables-${w._id}">
+          ${tables.map(t => `
+            <button onclick="toggleTableAssign('${w._id}', ${t.tableNumber}, this)"
+              style="
+                padding:5px 12px;
+                border-radius:8px;
+                font-size:12px;
+                font-weight:600;
+                cursor:pointer;
+                border:1.5px solid ${w.assignedTables.includes(t.tableNumber) ? '#1e293b' : '#eee'};
+                background:${w.assignedTables.includes(t.tableNumber) ? '#1e293b' : 'white'};
+                color:${w.assignedTables.includes(t.tableNumber) ? 'white' : '#888'};
+              ">
+              T${t.tableNumber}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function createWaiter() {
+  const name = document.getElementById('waiter-name').value.trim();
+  const email = document.getElementById('waiter-email').value.trim();
+  const password = document.getElementById('waiter-password').value;
+  if (!name || !email || !password) return alert('All fields required!');
+
+  const res = await fetch(`${API}/waiter/create`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password })
+  });
+  const data = await res.json();
+  if (data.error) return alert(data.error);
+
+  document.getElementById('waiter-name').value = '';
+  document.getElementById('waiter-email').value = '';
+  document.getElementById('waiter-password').value = '';
+  loadWaiters();
+}
+
+async function toggleTableAssign(waiterId, tableNumber, btn) {
+  const res = await fetch(`${API}/waiter/all`);
+  const waiters = await res.json();
+  const waiter = waiters.find(w => w._id === waiterId);
+  let tables = waiter.assignedTables || [];
+
+  if (tables.includes(tableNumber)) {
+    tables = tables.filter(t => t !== tableNumber);
+    btn.style.background = 'white';
+    btn.style.color = '#888';
+    btn.style.borderColor = '#eee';
+  } else {
+    tables.push(tableNumber);
+    btn.style.background = '#1e293b';
+    btn.style.color = 'white';
+    btn.style.borderColor = '#1e293b';
+  }
+
+  await fetch(`${API}/waiter/tables/${waiterId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ assignedTables: tables })
+  });
+}
+
+async function deleteWaiter(id) {
+  if (!confirm('Delete this waiter?')) return;
+  await fetch(`${API}/waiter/delete/${id}`, { method: 'DELETE' });
+  loadWaiters();
+}
+
+
 </script>
+<!-- WAITERS PAGE -->
+<div class="page" id="page-waiters">
+  <div class="form-card">
+    <h3>➕ Add New Waiter</h3>
+    <div class="form-row">
+      <input class="form-input" id="waiter-name" placeholder="Full name">
+      <input class="form-input" id="waiter-email" placeholder="Email">
+    </div>
+    <div class="form-row">
+      <input class="form-input" id="waiter-password" type="password" placeholder="Password">
+      <button class="btn-add" onclick="createWaiter()">Add Waiter</button>
+    </div>
+  </div>
+
+  <div class="section-header"><h2>All Waiters</h2></div>
+  <div id="waiters-list"></div>
+</div>
 </body>
 </html>
 ```
