@@ -1,35 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="../config.js"></script>
+  <script src="../config.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Panel</title>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
   <link rel="stylesheet" href="admin.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    .lucide { width: 18px; height: 18px; stroke-width: 2.2px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; }
+    .btn-icon { width: 14px; height: 14px; margin-right: 6px; vertical-align: text-bottom; stroke-width: 2.5px; }
+    .empty-icon { width: 48px; height: 48px; stroke-width: 1.5px; opacity: 0.4; margin-bottom: 12px; color: #64748b; }
+    .activity-icon { width: 16px; height: 16px; margin-right: 8px; stroke-width: 2.5px; }
+  </style>
 </head>
 <body>
 
 <div class="header">
-  <div>
-    <h1>🧑‍💼 Admin Panel</h1>
-    <div class="sub">Restaurant Management</div>
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <div style="background: #4338ca; color: white; padding: 6px; border-radius: 8px; display: flex;">
+      <i data-lucide="chef-hat"></i>
+    </div>
+    <div>
+      <h1>Admin Panel</h1>
+      <div class="sub">Restaurant Management</div>
+    </div>
   </div>
-  <div style="font-size:13px;opacity:0.6;" id="clock"></div>
+  <div style="font-size:13px;opacity:0.6;display:flex;align-items:center;gap:6px;" id="clock">
+    <i data-lucide="clock" style="width:14px;height:14px;"></i> <span></span>
+  </div>
 </div>
 
 <div class="nav">
-  <div class="nav-item active" onclick="switchPage('dashboard')" id="nav-dashboard">📊 Dashboard</div>
-  <div class="nav-item" onclick="switchPage('tables')" id="nav-tables">🪑 Tables</div>
-  <div class="nav-item" onclick="switchPage('menu')" id="nav-menu">🍴 Menu</div>
-  <div class="nav-item" onclick="switchPage('complaints')" id="nav-complaints">📝 Complaints <span class="badge-new" id="complaints-badge" style="display:none">!</span></div>
-  <div class="nav-item" onclick="switchPage('feedback')" id="nav-feedback">⭐ Feedback</div>
-  <div class="nav-item" onclick="switchPage('qr')" id="nav-qr">📲 QR Codes</div>
-  <div class="nav-item" onclick="switchPage('waiters')" id="nav-waiters">👨‍🍳 Waiters</div>
+  <div class="nav-item active" onclick="switchPage('dashboard')" id="nav-dashboard">
+    <i data-lucide="layout-dashboard"></i> Dashboard
+  </div>
+  <div class="nav-item" onclick="switchPage('tables')" id="nav-tables">
+    <i data-lucide="layout-grid"></i> Tables
+  </div>
+  <div class="nav-item" onclick="switchPage('menu')" id="nav-menu">
+    <i data-lucide="utensils"></i> Menu
+  </div>
+  <div class="nav-item" onclick="switchPage('complaints')" id="nav-complaints" style="position: relative;">
+    <i data-lucide="message-square-warning"></i> Requests 
+    <span class="badge-new" id="complaints-badge" style="display:none; position:absolute; right:12px;">!</span>
+  </div>
+  <div class="nav-item" onclick="switchPage('feedback')" id="nav-feedback">
+    <i data-lucide="star"></i> Feedback
+  </div>
+  <div class="nav-item" onclick="switchPage('qr')" id="nav-qr">
+    <i data-lucide="qr-code"></i> QR Codes
+  </div>
+  <div class="nav-item" onclick="switchPage('waiters')" id="nav-waiters">
+    <i data-lucide="users"></i> Waiters
+  </div>
 </div>
 
-<!-- ===== DASHBOARD ===== -->
 <div class="page active" id="page-dashboard">
   <div class="stats-grid">
     <div class="stat-card">
@@ -50,28 +82,27 @@
     </div>
   </div>
 
-  <div class="section-header"><h2>🔴 Live Activity</h2></div>
+  <div class="section-header">
+    <h2 style="display:flex;align-items:center;gap:8px;"><i data-lucide="activity" style="color:#ef4444;"></i> Live Activity</h2>
+  </div>
   <div id="live-activity"></div>
 </div>
 
-<!-- ===== TABLES ===== -->
 <div class="page" id="page-tables">
   <div class="form-card">
-    <h3>➕ Add New Table</h3>
+    <h3>Add New Table</h3>
     <div class="form-row">
       <input class="form-input" type="number" id="new-table-num" placeholder="Table number (e.g. 7)">
-      <button class="btn-add" onclick="addTable()">Add Table</button>
+      <button class="btn-add" onclick="addTable()"><i data-lucide="plus" class="btn-icon"></i>Add Table</button>
     </div>
   </div>
   <div class="section-header"><h2>All Tables</h2></div>
   <div class="tables-grid" id="tables-grid"></div>
 </div>
 
-<!-- ===== MENU ===== -->
-<!-- MENU PAGE -->
 <div class="page" id="page-menu">
   <div class="form-card">
-    <h3>➕ Add Menu Item</h3>
+    <h3>Add Menu Item</h3>
     <div class="form-row">
       <input class="form-input" id="item-name" placeholder="Item name">
       <input class="form-input" id="item-category" placeholder="Category">
@@ -82,22 +113,15 @@
     </div>
     <div class="form-row">
       <div style="flex:1;">
-        <label style="font-size:13px;color:#888;display:block;margin-bottom:6px;">Food Photo</label>
-        <input type="file" id="item-image" accept="image/*" style="
-          width:100%;
-          padding:8px;
-          border:2px dashed #eee;
-          border-radius:10px;
-          font-size:13px;
-          cursor:pointer;
-        ">
-        <div id="image-preview" style="margin-top:8px;display:none;">
-          <img id="preview-img" style="width:80px;height:80px;border-radius:10px;object-fit:cover;">
+        <label style="font-size:13px;color:#64748b;display:block;margin-bottom:8px;font-weight:500;">Food Photo</label>
+        <input type="file" id="item-image" accept="image/*" style="width:100%; padding:10px; border:2px dashed #e2e8f0; border-radius:10px; font-size:13px; cursor:pointer; color:#64748b; background:#f8fafc;">
+        <div id="image-preview" style="margin-top:12px;display:none;">
+          <img id="preview-img" style="width:80px;height:80px;border-radius:10px;object-fit:cover;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
         </div>
       </div>
     </div>
     <div class="form-row" style="margin-top:8px;">
-      <button class="btn-add" onclick="addMenuItem()" id="add-btn">Add Item</button>
+      <button class="btn-add" onclick="addMenuItem()" id="add-btn"><i data-lucide="plus" class="btn-icon"></i>Add Item</button>
     </div>
   </div>
 
@@ -105,39 +129,55 @@
   <div class="menu-list" id="menu-list"></div>
 </div>
 
-<!-- ===== COMPLAINTS ===== -->
 <div class="page" id="page-complaints">
-  <div class="section-header"><h2>Complaints & Other Requests</h2></div>
+  <div class="section-header"><h2>Complaints & Requests</h2></div>
   <div id="complaints-list"></div>
 </div>
 
-<!-- ===== FEEDBACK ===== -->
 <div class="page" id="page-feedback">
   <div class="section-header"><h2>Customer Feedback</h2></div>
   <div id="feedback-list"></div>
 </div>
 
-<!-- ===== QR CODES ===== -->
 <div class="page" id="page-qr">
   <div class="section-header">
-    <h2>QR Codes per Table</h2>
-    <button class="btn-add" onclick="loadQR()">🔄 Refresh</button>
+    <h2>Table QR Codes</h2>
+    <button class="btn-add" style="background:#f1f5f9; color:#0f172a;" onclick="loadQR()"><i data-lucide="refresh-cw" class="btn-icon"></i>Refresh</button>
   </div>
-  <p style="font-size:13px;color:#888;margin-bottom:16px;">Each QR points customers directly to their table's ordering page.</p>
+  <p style="font-size:13px;color:#64748b;margin-bottom:20px;">Print these and place them on your tables for customers to scan.</p>
   <div class="qr-grid" id="qr-grid"></div>
 </div>
 
-<!-- QR Library -->
+<div class="page" id="page-waiters">
+  <div class="form-card">
+    <h3>Add New Waiter</h3>
+    <div class="form-row">
+      <input class="form-input" id="waiter-name" placeholder="Full name">
+      <input class="form-input" id="waiter-username" placeholder="Username (e.g. ravi01)">
+    </div>
+    <div class="form-row">
+      <input class="form-input" id="waiter-password" type="password" placeholder="Password">
+      <button class="btn-add" onclick="createWaiter()"><i data-lucide="user-plus" class="btn-icon"></i>Add Waiter</button>
+    </div>
+  </div>
+
+  <div class="section-header"><h2>All Waiters</h2></div>
+  <div id="waiters-list"></div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
 <script>
   const API = CONFIG.API;
   const socket = io(CONFIG.SOCKET);
- const BASE_URL = 'https://restaurant-system-pi.vercel.app';
+  const BASE_URL = 'https://restaurant-system-pi.vercel.app';
+
+  // Initialize static icons immediately
+  lucide.createIcons();
 
   // Clock
   setInterval(() => {
-    document.getElementById('clock').textContent =
+    document.querySelector('#clock span').textContent =
       new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   }, 1000);
 
@@ -147,6 +187,7 @@
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('page-' + page).classList.add('active');
     document.getElementById('nav-' + page).classList.add('active');
+    
     if (page === 'dashboard') loadDashboard();
     if (page === 'tables') loadTables();
     if (page === 'menu') loadMenu();
@@ -166,10 +207,7 @@
   // ===== DASHBOARD =====
   async function loadDashboard() {
     const [ordersRes, requestsRes, complaintsRes, tablesRes] = await Promise.all([
-      fetch(`${API}/orders/all`),
-      fetch(`${API}/requests/all`),
-      fetch(`${API}/complaints/all`),
-      fetch(`${API}/tables`)
+      fetch(`${API}/orders/all`), fetch(`${API}/requests/all`), fetch(`${API}/complaints/all`), fetch(`${API}/tables`)
     ]);
     const orders = await ordersRes.json();
     const requests = await requestsRes.json();
@@ -186,25 +224,25 @@
     document.getElementById('stat-complaints').textContent = newComplaints.length;
     document.getElementById('stat-tables').textContent = occupiedTables.length;
 
-    // Live activity feed
     const allActivity = [
-      ...activeOrders.map(o => ({ type: 'order', label: `🍽️ Table ${o.tableNumber} placed an order`, time: o.createdAt, color: '#ff6b35' })),
-      ...pendingReqs.map(r => ({ type: 'request', label: `🛎️ Table ${r.tableNumber}: ${r.type}`, time: r.createdAt, color: '#3b82f6' })),
-      ...newComplaints.map(c => ({ type: 'complaint', label: `📝 Table ${c.tableNumber}: ${c.message.substring(0,40)}...`, time: c.createdAt, color: '#ef4444' }))
+      ...activeOrders.map(o => ({ type: 'order', icon: 'utensils', label: `Table ${o.tableNumber} placed an order`, time: o.createdAt, color: '#f59e0b' })),
+      ...pendingReqs.map(r => ({ type: 'request', icon: 'bell', label: `Table ${r.tableNumber}: ${r.type}`, time: r.createdAt, color: '#3b82f6' })),
+      ...newComplaints.map(c => ({ type: 'complaint', icon: 'alert-circle', label: `Table ${c.tableNumber}: ${c.message.substring(0,35)}...`, time: c.createdAt, color: '#ef4444' }))
     ].sort((a,b) => new Date(b.time) - new Date(a.time)).slice(0, 10);
 
     const container = document.getElementById('live-activity');
     if (!allActivity.length) {
-      container.innerHTML = `<div class="empty-state"><div class="icon">😴</div><p>All quiet right now!</p></div>`;
-      return;
+      container.innerHTML = `<div class="empty-state"><i data-lucide="moon" class="empty-icon"></i><p>All quiet right now!</p></div>`;
+    } else {
+      container.innerHTML = allActivity.map(a => `
+        <div style="background:white;border-radius:12px;padding:14px 18px;margin-bottom:12px; border-left:4px solid ${a.color};box-shadow:0 2px 4px rgba(0,0,0,0.02); display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:14px; font-weight:500; display:flex; align-items:center;">
+            <i data-lucide="${a.icon}" class="activity-icon" style="color:${a.color};"></i> ${a.label}
+          </span>
+          <span style="font-size:12px;color:#94a3b8;font-weight:500;">${timeAgo(a.time)}</span>
+        </div>`).join('');
     }
-    container.innerHTML = allActivity.map(a => `
-      <div style="background:white;border-radius:12px;padding:12px 16px;margin-bottom:10px;
-        border-left:4px solid ${a.color};box-shadow:0 2px 6px rgba(0,0,0,0.05);
-        display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:14px;">${a.label}</span>
-        <span style="font-size:12px;color:#aaa;">${timeAgo(a.time)}</span>
-      </div>`).join('');
+    lucide.createIcons();
   }
 
   // ===== TABLES =====
@@ -213,188 +251,145 @@
     const tables = await res.json();
     const grid = document.getElementById('tables-grid');
     if (!tables.length) {
-      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">🪑</div><p>No tables yet. Add one above!</p></div>`;
-      return;
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><i data-lucide="grid-3x3" class="empty-icon"></i><p>No tables yet. Add one above!</p></div>`;
+    } else {
+      grid.innerHTML = tables.map(t => `
+        <div class="table-tile ${t.status}" id="tile-${t._id}">
+          <div class="tnum">T${t.tableNumber}</div>
+          <div class="tstatus">${t.status}</div>
+          <select onchange="updateTableStatus('${t.tableNumber}', this.value)">
+            <option ${t.status==='empty'?'selected':''}>empty</option>
+            <option ${t.status==='occupied'?'selected':''}>occupied</option>
+            <option ${t.status==='reserved'?'selected':''}>reserved</option>
+          </select>
+        </div>`).join('');
     }
-    grid.innerHTML = tables.map(t => `
-      <div class="table-tile ${t.status}" id="tile-${t._id}">
-        <div class="tnum">T${t.tableNumber}</div>
-        <div class="tstatus">${t.status}</div>
-        <select onchange="updateTableStatus('${t.tableNumber}', this.value)">
-          <option ${t.status==='empty'?'selected':''}>empty</option>
-          <option ${t.status==='occupied'?'selected':''}>occupied</option>
-          <option ${t.status==='reserved'?'selected':''}>reserved</option>
-        </select>
-      </div>`).join('');
+    lucide.createIcons();
   }
 
   async function addTable() {
     const num = document.getElementById('new-table-num').value;
     if (!num) return;
-    await fetch(`${API}/tables/add`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tableNumber: parseInt(num) })
-    });
+    await fetch(`${API}/tables/add`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tableNumber: parseInt(num) }) });
     document.getElementById('new-table-num').value = '';
     loadTables();
   }
 
   async function updateTableStatus(tableNumber, status) {
-    await fetch(`${API}/tables/status/${tableNumber}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    });
+    await fetch(`${API}/tables/status/${tableNumber}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
     loadTables();
   }
 
   // ===== MENU =====
-
-// Preview image before upload
-document.getElementById('item-image').addEventListener('change', function() {
-  const file = this.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      document.getElementById('preview-img').src = e.target.result;
-      document.getElementById('image-preview').style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-  }
-});
-
-async function addMenuItem() {
-  const name = document.getElementById('item-name').value.trim();
-  const category = document.getElementById('item-category').value.trim();
-  const price = document.getElementById('item-price').value;
-  const description = document.getElementById('item-desc').value.trim();
-  const imageFile = document.getElementById('item-image').files[0];
-
-  if (!name || !price) return alert('Name and price are required!');
-
-  const btn = document.getElementById('add-btn');
-  btn.textContent = 'Adding...';
-  btn.disabled = true;
-
-  // Use FormData because we're sending a file
-  const formData = new FormData();
-  formData.append('name', name);
-  formData.append('category', category);
-  formData.append('price', price);
-  formData.append('description', description);
-  if (imageFile) formData.append('image', imageFile);
-
-  await fetch(`${API}/menu/add`, {
-    method: 'POST',
-    body: formData
-    // NOTE: No Content-Type header — browser sets it automatically for FormData
+  document.getElementById('item-image').addEventListener('change', function() {
+    const file = this.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById('preview-img').src = e.target.result;
+        document.getElementById('image-preview').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
   });
 
-  // Clear form
-  document.getElementById('item-name').value = '';
-  document.getElementById('item-category').value = '';
-  document.getElementById('item-price').value = '';
-  document.getElementById('item-desc').value = '';
-  document.getElementById('item-image').value = '';
-  document.getElementById('image-preview').style.display = 'none';
+  async function addMenuItem() {
+    const name = document.getElementById('item-name').value.trim();
+    const category = document.getElementById('item-category').value.trim();
+    const price = document.getElementById('item-price').value;
+    const description = document.getElementById('item-desc').value.trim();
+    const imageFile = document.getElementById('item-image').files[0];
 
-  btn.textContent = 'Add Item';
-  btn.disabled = false;
+    if (!name || !price) return alert('Name and price are required!');
 
-  loadMenu();
-}
+    const btn = document.getElementById('add-btn');
+    btn.innerHTML = `<i data-lucide="loader-2" class="btn-icon"></i>Adding...`;
+    lucide.createIcons();
+    btn.disabled = true;
 
-async function loadMenu() {
-  const res = await fetch(`${API}/menu/all`);
-  const items = await res.json();
-  const container = document.getElementById('menu-list');
-  if (!items.length) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">🍴</div><p>No menu items yet</p></div>`;
-    return;
+    const formData = new FormData();
+    formData.append('name', name); formData.append('category', category); formData.append('price', price); formData.append('description', description);
+    if (imageFile) formData.append('image', imageFile);
+
+    await fetch(`${API}/menu/add`, { method: 'POST', body: formData });
+
+    document.getElementById('item-name').value = ''; document.getElementById('item-category').value = '';
+    document.getElementById('item-price').value = ''; document.getElementById('item-desc').value = '';
+    document.getElementById('item-image').value = ''; document.getElementById('image-preview').style.display = 'none';
+
+    btn.innerHTML = `<i data-lucide="plus" class="btn-icon"></i>Add Item`;
+    lucide.createIcons();
+    btn.disabled = false;
+    loadMenu();
   }
-  
-  container.innerHTML = items.map(item => `
-    <div class="menu-row">
-      <div style="display:flex;align-items:center;gap:12px;">
-        ${item.image
-          ? `<img src="${item.image}" style="width:52px;height:52px;border-radius:10px;object-fit:cover;flex-shrink:0;">`
-          : `<div style="width:52px;height:52px;border-radius:10px;background:#f1f1f1;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🍽️</div>`
-        }
-        <div class="menu-row-info">
-          <h4>${item.name}</h4>
-          <p>${item.category} ${item.description ? '· ' + item.description : ''}</p>
-        </div>
-      </div>
-      <div class="menu-row-right" style="display:flex; align-items:center; gap:8px;">
-        <span class="price-tag">₹${item.price}</span>
-        
-        <button 
-          onclick="toggleItem('${item._id}')" 
-          style="border:none; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; width:120px; text-align:center; background-color: ${item.available === false ? '#fee2e2' : '#dcfce7'}; color: ${item.available === false ? '#ef4444' : '#16a34a'};"
-        >
-          ${item.available === false ? '🔴 Out of Stock' : '🟢 Live'}
-        </button>
 
-        <input type="file" id="photo-upload-${item._id}" accept="image/*" style="display:none;" onchange="updateItemPhoto('${item._id}')">
-        <button onclick="document.getElementById('photo-upload-${item._id}').click()" style="
-          background:#f1f5f9;
-          color:#475569;
-          border:none;
-          border-radius:8px;
-          padding:5px 12px;
-          font-size:12px;
-          font-weight:700;
-          cursor:pointer;
-        ">📷 Photo</button>
+  async function loadMenu() {
+    const res = await fetch(`${API}/menu/all`);
+    const items = await res.json();
+    const container = document.getElementById('menu-list');
+    if (!items.length) {
+      container.innerHTML = `<div class="empty-state"><i data-lucide="book-open" class="empty-icon"></i><p>No menu items yet</p></div>`;
+    } else {
+      container.innerHTML = items.map(item => `
+        <div class="menu-row">
+          <div style="display:flex;align-items:center;gap:14px;">
+            ${item.image
+              ? `<img src="${item.image}" style="width:56px;height:56px;border-radius:12px;object-fit:cover;flex-shrink:0;">`
+              : `<div style="width:56px;height:56px;border-radius:12px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#94a3b8;flex-shrink:0;"><i data-lucide="image"></i></div>`
+            }
+            <div class="menu-row-info">
+              <h4>${item.name}</h4>
+              <p>${item.category} ${item.description ? '· ' + item.description : ''}</p>
+            </div>
+          </div>
+          <div class="menu-row-right" style="display:flex; align-items:center; gap:8px;">
+            <span class="price-tag">₹${item.price}</span>
+            <button onclick="toggleItem('${item._id}')" style="border:none; padding:8px 14px; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; width:120px; text-align:center; background-color: ${item.available === false ? '#fee2e2' : '#dcfce7'}; color: ${item.available === false ? '#ef4444' : '#16a34a'}; transition: background 0.2s;">
+              ${item.available === false ? 'Out of Stock' : 'Live'}
+            </button>
+            <input type="file" id="photo-upload-${item._id}" accept="image/*" style="display:none;" onchange="updateItemPhoto('${item._id}')">
+            <button onclick="document.getElementById('photo-upload-${item._id}').click()" style="background:#f1f5f9; color:#475569; border:none; border-radius:10px; padding:8px 12px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center;"><i data-lucide="camera" style="width:16px; height:16px;"></i></button>
+            <button onclick="deleteItem('${item._id}')" style="background:#fee2e2; color:#ef4444; border:none; border-radius:10px; padding:8px 12px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center;"><i data-lucide="trash-2" style="width:16px; height:16px;"></i></button>
+          </div>
+        </div>`).join('');
+    }
+    lucide.createIcons();
+  }
 
-        <button onclick="deleteItem('${item._id}')" style="
-          background:#fee2e2;
-          color:#ef4444;
-          border:none;
-          border-radius:8px;
-          padding:5px 12px;
-          font-size:12px;
-          font-weight:700;
-          cursor:pointer;
-        ">Delete</button>
-      </div>
-    </div>`).join('');
-}
-
-async function updateItemPhoto(id) {
+  async function updateItemPhoto(id) {
     const fileInput = document.getElementById(`photo-upload-${id}`);
     const file = fileInput.files[0];
-    
     if (!file) return; 
 
     const btn = fileInput.nextElementSibling;
-    const originalText = btn.textContent;
-    btn.textContent = '⏳...';
+    btn.innerHTML = `<i data-lucide="loader-2" style="width:16px; height:16px;"></i>`;
+    lucide.createIcons();
     btn.disabled = true;
 
     const formData = new FormData();
     formData.append('image', file);
 
     try {
-      const res = await fetch(`${API}/menu/update/${id}`, {
-        method: 'PUT',
-        body: formData
-      });
-      
-      if (res.ok) {
-        loadMenu(); 
-      } else {
-        alert('Failed to upload photo.');
-      }
+      const res = await fetch(`${API}/menu/update/${id}`, { method: 'PUT', body: formData });
+      if (res.ok) loadMenu(); else alert('Failed to upload photo.');
     } catch (error) {
-      console.error('Upload error:', error);
-      alert('An error occurred while uploading.');
+      console.error('Upload error:', error); alert('An error occurred while uploading.');
     } finally {
-      btn.textContent = originalText;
       btn.disabled = false;
     }
   }
+
+  async function deleteItem(id) {
+    if (!confirm('Delete this item? This cannot be undone.')) return;
+    await fetch(`${API}/menu/delete/${id}`, { method: 'DELETE' });
+    loadMenu();
+  }
+
+  async function toggleItem(id) {
+    await fetch(`${API}/menu/toggle/${id}`, { method: 'PUT' });
+    loadMenu();
+  }
+
   // ===== COMPLAINTS =====
   async function loadComplaints() {
     const res = await fetch(`${API}/complaints/all`);
@@ -406,30 +401,28 @@ async function updateItemPhoto(id) {
 
     const container = document.getElementById('complaints-list');
     if (!complaints.length) {
-      container.innerHTML = `<div class="empty-state"><div class="icon">✅</div><p>No complaints!</p></div>`;
-      return;
+      container.innerHTML = `<div class="empty-state"><i data-lucide="check-circle-2" class="empty-icon"></i><p>No pending requests or complaints!</p></div>`;
+    } else {
+      container.innerHTML = complaints.map(c => `
+        <div class="complaint-card ${c.status === 'resolved' ? 'resolved' : ''} ${c.message.startsWith('[OTHER]') ? 'other' : ''}">
+          <div class="complaint-header">
+            <span class="complaint-table" style="display:flex; align-items:center; gap:6px;">
+              <i data-lucide="${c.message.startsWith('[OTHER]') ? 'message-circle' : 'alert-octagon'}" style="width:16px; height:16px;"></i> 
+              Table ${c.tableNumber}
+            </span>
+            <span class="complaint-time">${timeAgo(c.createdAt)}</span>
+          </div>
+          <div class="complaint-msg">${c.message.replace('[OTHER] ', '')}</div>
+          ${c.status !== 'resolved'
+            ? `<button class="resolve-btn" onclick="resolveComplaint('${c._id}')"><i data-lucide="check" class="btn-icon"></i>Mark Resolved</button>`
+            : '<div style="font-size:13px;color:#10b981;margin-top:12px;font-weight:600;display:flex;align-items:center;gap:4px;"><i data-lucide="check-circle-2" style="width:16px;height:16px;"></i> Resolved</div>'}
+        </div>`).join('');
     }
-    container.innerHTML = complaints.map(c => `
-      <div class="complaint-card ${c.status === 'resolved' ? 'resolved' : ''} ${c.message.startsWith('[OTHER]') ? 'other' : ''}">
-        <div class="complaint-header">
-          <span class="complaint-table">
-            ${c.message.startsWith('[OTHER]') ? '💬 Other' : '📝 Complaint'} — Table ${c.tableNumber}
-          </span>
-          <span class="complaint-time">${timeAgo(c.createdAt)}</span>
-        </div>
-        <div class="complaint-msg">${c.message.replace('[OTHER] ', '')}</div>
-        ${c.status !== 'resolved'
-          ? `<button class="resolve-btn" onclick="resolveComplaint('${c._id}')">✓ Mark Resolved</button>`
-          : '<div style="font-size:12px;color:#16a34a;margin-top:8px;">✓ Resolved</div>'}
-      </div>`).join('');
+    lucide.createIcons();
   }
 
   async function resolveComplaint(id) {
-    await fetch(`${API}/complaints/status/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'resolved' })
-    });
+    await fetch(`${API}/complaints/status/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'resolved' }) });
     loadComplaints();
   }
 
@@ -439,22 +432,23 @@ async function updateItemPhoto(id) {
     const feedbacks = await res.json();
     const container = document.getElementById('feedback-list');
     if (!feedbacks.length) {
-      container.innerHTML = `<div class="empty-state"><div class="icon">⭐</div><p>No feedback yet</p></div>`;
-      return;
+      container.innerHTML = `<div class="empty-state"><i data-lucide="star" class="empty-icon"></i><p>No feedback yet</p></div>`;
+    } else {
+      container.innerHTML = feedbacks.map(f => `
+        <div class="feedback-card">
+          <div class="feedback-header">
+            <span class="feedback-table">Table ${f.tableNumber}</span>
+            <span style="font-size:12px;color:#94a3b8;font-weight:500;">${timeAgo(f.createdAt)}</span>
+          </div>
+          ${f.ratings.map(r => `
+            <div class="rating-row">
+              <span>${r.itemName}</span>
+              <span class="stars-display">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</span>
+            </div>`).join('')}
+          ${f.comment ? `<div class="feedback-comment">"${f.comment}"</div>` : ''}
+        </div>`).join('');
     }
-    container.innerHTML = feedbacks.map(f => `
-      <div class="feedback-card">
-        <div class="feedback-header">
-          <span class="feedback-table">Table ${f.tableNumber}</span>
-          <span style="font-size:12px;color:#aaa;">${timeAgo(f.createdAt)}</span>
-        </div>
-        ${f.ratings.map(r => `
-          <div class="rating-row">
-            <span>${r.itemName}</span>
-            <span class="stars-display">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</span>
-          </div>`).join('')}
-        ${f.comment ? `<div class="feedback-comment">"${f.comment}"</div>` : ''}
-      </div>`).join('');
+    lucide.createIcons();
   }
 
   // ===== QR CODES =====
@@ -463,40 +457,132 @@ async function updateItemPhoto(id) {
     const tables = await res.json();
     const grid = document.getElementById('qr-grid');
     if (!tables.length) {
-      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">📲</div><p>Add tables first to generate QR codes</p></div>`;
-      return;
-    }
-    grid.innerHTML = tables.map(t => `
-      <div class="qr-card">
-        <h4>Table ${t.tableNumber}</h4>
-        <div id="qr-${t.tableNumber}"></div>
-        <div class="qr-url">/customer/index.html?table=${t.tableNumber}</div>
-        <button class="print-btn" onclick="printQR(${t.tableNumber})">🖨️ Print</button>
-      </div>`).join('');
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><i data-lucide="smartphone" class="empty-icon"></i><p>Add tables first to generate QR codes</p></div>`;
+    } else {
+      grid.innerHTML = tables.map(t => `
+        <div class="qr-card">
+          <h4>Table ${t.tableNumber}</h4>
+          <div id="qr-${t.tableNumber}"></div>
+          <button class="print-btn" onclick="printQR(${t.tableNumber})"><i data-lucide="printer" class="btn-icon"></i>Print Card</button>
+        </div>`).join('');
 
-    // Generate QR codes
-    tables.forEach(t => {
-      new QRCode(document.getElementById(`qr-${t.tableNumber}`), {
-        text: `${BASE_URL}/customer/index.html?table=${t.tableNumber}`,
-        width: 140,
-        height: 140,
-        colorDark: '#0f172a',
-        colorLight: '#ffffff'
+      tables.forEach(t => {
+        new QRCode(document.getElementById(`qr-${t.tableNumber}`), { text: `${BASE_URL}/customer/index.html?table=${t.tableNumber}`, width: 140, height: 140, colorDark: '#0f172a', colorLight: '#ffffff' });
       });
-    });
+    }
+    lucide.createIcons();
   }
 
   function printQR(tableNumber) {
     const canvas = document.querySelector(`#qr-${tableNumber} canvas`);
     const win = window.open('');
-    win.document.write(`
-      <html><body style="text-align:center;padding:40px;font-family:sans-serif;">
-        <h2 style="margin-bottom:8px;">Table ${tableNumber}</h2>
-        <p style="color:#888;margin-bottom:20px;">Scan to order & request service</p>
-        <img src="${canvas.toDataURL()}" style="width:250px;height:250px;">
-        <p style="margin-top:20px;font-size:12px;color:#aaa;">DineEasy Restaurant System</p>
-        <script>window.onload=()=>{window.print();window.close()}<\/script>
-      </body></html>`);
+    win.document.write(`<html><body style="text-align:center;padding:40px;font-family:sans-serif;"><h2 style="margin-bottom:8px;">Table ${tableNumber}</h2><p style="color:#888;margin-bottom:20px;">Scan to order & request service</p><img src="${canvas.toDataURL()}" style="width:250px;height:250px;"><p style="margin-top:20px;font-size:12px;color:#aaa;">DineEasy Restaurant System</p><script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`);
+  }
+
+  // ===== WAITERS =====
+  async function loadWaiters() {
+    const [waitersRes, tablesRes] = await Promise.all([
+      fetch(`${API}/waiter/all`), fetch(`${API}/tables`)
+    ]);
+    const waiters = await waitersRes.json();
+    const tables = await tablesRes.json();
+
+    const container = document.getElementById('waiters-list');
+    if (!waiters.length) {
+      container.innerHTML = `<div class="empty-state"><i data-lucide="users" class="empty-icon"></i><p>No waiters yet</p></div>`;
+    } else {
+      container.innerHTML = waiters.map(w => `
+        <div style="background:white;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:40px;height:40px;border-radius:10px;background:#f8fafc;display:flex;align-items:center;justify-content:center;color:#64748b;"><i data-lucide="user"></i></div>
+              <div>
+                <div style="font-size:15px;font-weight:700;color:#0f172a;">${w.name}</div>
+                <div style="font-size:13px;color:#64748b;">@${w.username}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;background:${w.isAvailable ? '#dcfce7' : '#fee2e2'};color:${w.isAvailable ? '#16a34a' : '#ef4444'};">${w.isAvailable ? 'Available' : 'Busy'}</span>
+              <button onclick="deleteWaiter('${w._id}')" style="background:#fee2e2;color:#ef4444;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;display:flex;align-items:center;"><i data-lucide="trash-2" style="width:16px;height:16px;"></i></button>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Assigned Tables</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;" id="tables-${w._id}">
+              ${tables.map(t => `
+                <button onclick="toggleTableAssign('${w._id}', ${t.tableNumber}, this)"
+                  style="
+                    padding:6px 14px;
+                    border-radius:8px;
+                    font-size:13px;
+                    font-weight:600;
+                    cursor:pointer;
+                    transition:all 0.2s;
+                    border:1.5px solid ${w.assignedTables.includes(t.tableNumber) ? '#4338ca' : '#e2e8f0'};
+                    background:${w.assignedTables.includes(t.tableNumber) ? '#4338ca' : 'white'};
+                    color:${w.assignedTables.includes(t.tableNumber) ? 'white' : '#64748b'};
+                  ">
+                  T${t.tableNumber}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+    lucide.createIcons();
+  }
+
+  async function createWaiter() {
+    const name = document.getElementById('waiter-name').value.trim();
+    const username = document.getElementById('waiter-username').value.trim();
+    const password = document.getElementById('waiter-password').value;
+    if (!name || !username || !password) return alert('All fields required!');
+
+    const res = await fetch(`${API}/waiter/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, username, password })
+    });
+    const data = await res.json();
+    if (data.error) return alert(data.error);
+
+    document.getElementById('waiter-name').value = '';
+    document.getElementById('waiter-username').value = '';
+    document.getElementById('waiter-password').value = '';
+    loadWaiters();
+  }
+
+  async function toggleTableAssign(waiterId, tableNumber, btn) {
+    const res = await fetch(`${API}/waiter/all`);
+    const waiters = await res.json();
+    const waiter = waiters.find(w => w._id === waiterId);
+    let tables = waiter.assignedTables || [];
+
+    if (tables.includes(tableNumber)) {
+      tables = tables.filter(t => t !== tableNumber);
+      btn.style.background = 'white';
+      btn.style.color = '#64748b';
+      btn.style.borderColor = '#e2e8f0';
+    } else {
+      tables.push(tableNumber);
+      btn.style.background = '#4338ca';
+      btn.style.color = 'white';
+      btn.style.borderColor = '#4338ca';
+    }
+
+    await fetch(`${API}/waiter/tables/${waiterId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assignedTables: tables })
+    });
+  }
+
+  async function deleteWaiter(id) {
+    if (!confirm('Delete this waiter?')) return;
+    await fetch(`${API}/waiter/delete/${id}`, { method: 'DELETE' });
+    loadWaiters();
   }
 
   // ===== SOCKET: Real-time =====
@@ -504,146 +590,10 @@ async function updateItemPhoto(id) {
   socket.on('new-request', () => { if (document.getElementById('page-dashboard').classList.contains('active')) loadDashboard(); });
   socket.on('new-complaint', () => { loadComplaints(); });
 
-  // Refresh dashboard every 30s
-  setInterval(() => {
-    if (document.getElementById('page-dashboard').classList.contains('active')) loadDashboard();
-  }, 30000);
+  setInterval(() => { if (document.getElementById('page-dashboard').classList.contains('active')) loadDashboard(); }, 30000);
 
   // Init
   loadDashboard();
-
-  // ===== WAITERS =====
-async function loadWaiters() {
-  const [waitersRes, tablesRes] = await Promise.all([
-    fetch(`${API}/waiter/all`),
-    fetch(`${API}/tables`)
-  ]);
-  const waiters = await waitersRes.json();
-  const tables = await tablesRes.json();
-
-  const container = document.getElementById('waiters-list');
-  if (!waiters.length) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">👨‍🍳</div><p>No waiters yet</p></div>`;
-    return;
-  }
-
-  container.innerHTML = waiters.map(w => `
-    <div style="background:white;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div>
-          <div style="font-size:15px;font-weight:700;">${w.name}</div>
-          <div style="font-size:12px;color:#888;">${w.username}</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <span style="
-            padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;
-            background:${w.isAvailable ? '#dcfce7' : '#fee2e2'};
-            color:${w.isAvailable ? '#16a34a' : '#ef4444'};
-          ">${w.isAvailable ? 'Available' : 'Busy'}</span>
-          <button onclick="deleteWaiter('${w._id}')" style="background:#fee2e2;color:#ef4444;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">Delete</button>
-        </div>
-      </div>
-
-      <div style="margin-bottom:10px;">
-        <div style="font-size:12px;font-weight:600;color:#888;margin-bottom:8px;">ASSIGNED TABLES</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;" id="tables-${w._id}">
-          ${tables.map(t => `
-            <button onclick="toggleTableAssign('${w._id}', ${t.tableNumber}, this)"
-              style="
-                padding:5px 12px;
-                border-radius:8px;
-                font-size:12px;
-                font-weight:600;
-                cursor:pointer;
-                border:1.5px solid ${w.assignedTables.includes(t.tableNumber) ? '#1e293b' : '#eee'};
-                background:${w.assignedTables.includes(t.tableNumber) ? '#1e293b' : 'white'};
-                color:${w.assignedTables.includes(t.tableNumber) ? 'white' : '#888'};
-              ">
-              T${t.tableNumber}
-            </button>
-          `).join('')}
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-async function createWaiter() {
-  const name = document.getElementById('waiter-name').value.trim();
-  const username = document.getElementById('waiter-username').value.trim();
-  const password = document.getElementById('waiter-password').value;
-  if (!name || !username || !password) return alert('All fields required!');
-
-  const res = await fetch(`${API}/waiter/create`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, username, password })
-  });
-  const data = await res.json();
-  if (data.error) return alert(data.error);
-
-  document.getElementById('waiter-name').value = '';
-  document.getElementById('waiter-username').value = '';
-  document.getElementById('waiter-password').value = '';
-  loadWaiters();
-}
-
-async function toggleTableAssign(waiterId, tableNumber, btn) {
-  const res = await fetch(`${API}/waiter/all`);
-  const waiters = await res.json();
-  const waiter = waiters.find(w => w._id === waiterId);
-  let tables = waiter.assignedTables || [];
-
-  if (tables.includes(tableNumber)) {
-    tables = tables.filter(t => t !== tableNumber);
-    btn.style.background = 'white';
-    btn.style.color = '#888';
-    btn.style.borderColor = '#eee';
-  } else {
-    tables.push(tableNumber);
-    btn.style.background = '#1e293b';
-    btn.style.color = 'white';
-    btn.style.borderColor = '#1e293b';
-  }
-
-  await fetch(`${API}/waiter/tables/${waiterId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ assignedTables: tables })
-  });
-}
-
-async function deleteWaiter(id) {
-  if (!confirm('Delete this waiter?')) return;
-  await fetch(`${API}/waiter/delete/${id}`, { method: 'DELETE' });
-  loadWaiters();
-}
-
-
 </script>
-<!-- WAITERS PAGE -->
-<div class="page" id="page-waiters">
-<div class="form-card">
-  <h3>➕ Add New Waiter</h3>
-  <div class="form-row">
-    <input class="form-input" id="waiter-name" placeholder="Full name">
-    <input class="form-input" id="waiter-username" placeholder="Username (e.g. ravi01)">
-  </div>
-  <div class="form-row">
-    <input class="form-input" id="waiter-password" type="password" placeholder="Password">
-    <button class="btn-add" onclick="createWaiter()">Add Waiter</button>
-  </div>
-</div>
-
-  <div class="section-header"><h2>All Waiters</h2></div>
-  <div id="waiters-list"></div>
-</div>
 </body>
 </html>
-```
-
----
-
-Open it at:
-```
-https://restaurant-system-pi.vercel.app/admin/index.html
