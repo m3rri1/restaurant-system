@@ -514,12 +514,18 @@ function askBot(q) {
   }, 400);
 }
 
+// Listen for the waiter clearing the table
 socket.on('table-cleared', (data) => {
   if (data.tableNumber === TABLE_NUMBER) {
-    // Reset home screen
-    document.getElementById('active-orders-section').style.display = 'none';
-    document.getElementById('home-orders-list').innerHTML = '';
-    showToast('Table cleared. Thank you for dining with us!');
+    // 1. Empty the cart memory
+    cart = {};
+    updateCartBar();
+    
+    // 2. Alert the customer
+    alert('Your bill has been settled and the table is cleared. Thank you for dining with us!');
+    
+    // 3. Force the app to completely reload for the next customer
+    window.location.reload();
   }
 });
 

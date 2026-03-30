@@ -15,35 +15,30 @@ router.post('/add', async (req, res) => {
   res.json({ message: 'Table added', table });
 });
 
+// Clear Table Route
 router.post('/clear/:tableNumber', async (req, res) => {
   try {
-    const tableNumber = parseInt(req.params.tableNumber);
+    const tableNum = parseInt(req.params.tableNumber);
+    
+    // 1. Reset the table status to empty
+    await Table.findOneAndUpdate({ tableNumber: tableNum }, { status: 'empty' });
+    
+    // 2. Clear out the orders and requests for this table
+    await Order.updateMany({ tableNumber: tableNum }, { status: 'paid' });
+    await Request.updateMany({ tableNumber: tableNum }, { status: 'done' });
+    await Complaint.updateMany({ tableNumber: tableNum }, { status: 'resolved' });
 
-    // Mark all orders as cleared
-    await Order.updateMany(
-      { tableNumber },
-      { cleared: true, status: 'served' }
-    );
-
-    // Mark all requests as done
-    await Request.updateMany(
-      { tableNumber },
-      { status: 'done' }
-    );
-
-    // Set table to empty
-    await Table.findOneAndUpdate(
-      { tableNumber },
-      { status: 'empty' }
-    );
-
+    // 3. THIS IS THE CRITICAL LINE: Tell the customer's phone to reset!
     const io = req.app.get('io');
-    io.emit('table-cleared', { tableNumber });
+    if (io) {
+      io.emit('table-cleared', { tableNumber: tableNum });
+      io.emit('order-updated'); // Tell admin/waiters to refresh their screens
+    }
 
-    res.json({ message: 'Table cleared successfully' });
-  } catch(e) {
-    console.log('Clear table error:', e);
-    res.status(500).json({ error: e.message });
+    res.json({ success: true, message: 'Table cleared' });
+  } catch (error) {
+    console.error("Clear table error:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
