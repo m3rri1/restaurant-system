@@ -402,23 +402,20 @@
 
   // ===== LOAD ORDERS (only assigned tables) =====
   async function loadOrders() {
-    const res = await fetch(`${API}/orders/all`);
-    const allOrders = await res.json();
+  if (!currentWaiter) return;
+  const res = await fetch(`${API}/orders/all`);
+  const allOrders = await res.json();
 
-    // Filter to only this waiter's assigned tables
-    const myTables = currentWaiter.assignedTables;
-    const myOrders = allOrders.filter(o => myTables.includes(o.tableNumber));
+  const myTables = currentWaiter.assignedTables || [];
+  const myOrders = allOrders.filter(o => myTables.includes(o.tableNumber) && !o.cleared);
+  const active = myOrders.filter(o => o.status !== 'served');
+  const done = myOrders.filter(o => o.status === 'served');
 
-    const active = myOrders.filter(o => o.status !== 'served');
-    const done = myOrders.filter(o => o.status === 'served');
+  document.getElementById('orders-badge').textContent = active.length;
 
-    document.getElementById('orders-badge').textContent = active.length;
-
-    const container = document.getElementById('orders-list');
-    if (!active.length) {
-      container.innerHTML = `<div class="empty-state"><div class="icon">🍽️</div><p>No active orders for your tables</p></div>`;
-    } else {
-      container.innerHTML = active.map(order => `
+  const container = document.getElementById('orders-list');
+  container.innerHTML = active.length
+    ? active.map(order => `
         <div class="card">
           <div class="card-header">
             <div>
@@ -434,51 +431,61 @@
                 <span>₹${i.price * i.qty}</span>
               </div>`).join('')}
           </div>
-          <div class="total-row">
-            <span>Total</span><span>₹${order.totalPrice}</span>
-          </div>
+          <div class="total-row"><span>Total</span><span>₹${order.totalPrice}</span></div>
           <div class="card-actions">
             ${order.status === 'pending'
-              ? `<button class="btn btn-preparing" onclick="updateOrder('${order._id}','preparing')">Preparing</button>`
+              ? `<button class="btn btn-preparing" onclick="updateOrder('${order._id}','preparing')">👨‍🍳 Preparing</button>`
               : ''}
             ${order.status === 'preparing'
-              ? `<button class="btn btn-served" onclick="updateOrder('${order._id}','served')">Served</button>`
-              : ''}
-            ${order.status === 'served'
-              ? `<button class="btn" style="background:#fee2e2;color:#ef4444;" onclick="clearTable(${order.tableNumber})">Customer Left — Clear Table</button>`
+              ? `<button class="btn btn-served" onclick="updateOrder('${order._id}','served')">✅ Served</button>`
               : ''}
           </div>
-        </div>`).join('');
-    }
+        </div>`).join('')
+    : `<div class="empty-state"><div class="icon">🍽️</div><p>No active orders</p></div>`;
+
+  // Group done orders by table — show ONE clear button per table
+  const doneContainer = document.getElementById('done-list');
+  if (!done.length) {
+    doneContainer.innerHTML = `<div class="empty-state"><div class="icon">✅</div><p>No completed orders yet</p></div>`;
+    return;
   }
 
-    // Done orders
-    const doneContainer = document.getElementById('done-list');
-    doneContainer.innerHTML = done.length
-  ? done.map(order => `
+  // Group by tableNumber
+  const byTable = {};
+  done.forEach(order => {
+    if (!byTable[order.tableNumber]) byTable[order.tableNumber] = [];
+    byTable[order.tableNumber].push(order);
+  });
+
+  doneContainer.innerHTML = Object.entries(byTable).map(([tableNum, orders]) => {
+    const allItems = orders.flatMap(o => o.items);
+    const total = orders.reduce((s, o) => s + o.totalPrice, 0);
+    return `
       <div class="card done">
         <div class="card-header">
           <div>
-            <div class="table-num">Table ${order.tableNumber}</div>
-            <div class="time-ago">${timeAgo(order.createdAt)}</div>
+            <div class="table-num">Table ${tableNum}</div>
+            <div class="time-ago">All orders served</div>
           </div>
           <span class="status-pill pill-served">served</span>
         </div>
-        <div>${order.items.map(i => `
-          <div class="item-row">
-            <span>${i.name} x${i.qty}</span>
-            <span>₹${i.price * i.qty}</span>
-          </div>`).join('')}
+        <div>
+          ${allItems.map(i => `
+            <div class="item-row">
+              <span>${i.name} x${i.qty}</span>
+              <span>₹${i.price * i.qty}</span>
+            </div>`).join('')}
         </div>
+        <div class="total-row"><span>Total Bill</span><span>₹${total}</span></div>
         <div class="card-actions" style="margin-top:12px;">
-          <button class="btn" style="background:#fee2e2;color:#ef4444;" 
-            onclick="clearTable(${order.tableNumber})">
-            Customer Left — Clear Table ${order.tableNumber}
+          <button class="btn" style="background:#fee2e2;color:#ef4444;width:100%;"
+            onclick="clearTable(${tableNum})">
+            🧹 Customer Left — Clear Table ${tableNum}
           </button>
         </div>
-      </div>`).join('')
-  : `<div class="empty-state"><div class="icon">✅</div><p>No completed orders yet</p></div>`;
-
+      </div>`;
+  }).join('');
+}
   // ===== LOAD REQUESTS (only assigned tables) =====
   async function loadRequests() {
     const res = await fetch(`${API}/requests/all`);
