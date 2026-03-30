@@ -38,14 +38,11 @@ function showScreen(id) {
   if (navMap[id]) document.getElementById(navMap[id]).classList.add('active');
   window.scrollTo(0, 0);
 
-if (id === 'screen-order') {
+  if (id === 'screen-order') {
     loadMenu();
-    
-    // Check if the popup has already been shown this session
     if (!sessionStorage.getItem('menuPopupShown')) {
       setTimeout(() => {
         document.getElementById('physical-menu-popup').classList.add('show');
-        // Mark it as shown so it never pops up again during this visit
         sessionStorage.setItem('menuPopupShown', 'true');
       }, 1000);
     }
@@ -108,13 +105,13 @@ function renderMenuItemsFiltered(items) {
   if (!items.length) {
     document.getElementById('menu-items-list').innerHTML =
       `<div class="empty">
-        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <i data-lucide="search-x"></i>
         <p>No items found</p>
       </div>`;
+    lucide.createIcons();
     return;
   }
 
-  // Group by category
   const grouped = {};
   items.forEach(item => {
     const cat = item.category || 'Other';
@@ -128,19 +125,15 @@ function renderMenuItemsFiltered(items) {
     
     catItems.forEach(item => {
       const qty = cart[item._id]?.qty || 0;
-      
-      // CHECK IF ITEM IS OUT OF STOCK
       const isOut = item.available === false;
 
       html += `
         <div class="menu-card ${isOut ? 'is-sold-out' : ''}">
-          <div class="menu-img placeholder" id="img-${item._id}" style="position: relative;">
-            
+          <div class="menu-img placeholder" id="img-${item._id}">
             ${isOut ? `<div class="sold-out-badge">Sold Out</div>` : ''}
-            
             ${item.image
               ? `<img src="${item.image}" alt="${item.name}">`
-              : `<svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>`
+              : `<i data-lucide="image"></i>`
             }
           </div>
           <div class="menu-info">
@@ -148,15 +141,14 @@ function renderMenuItemsFiltered(items) {
             <p>${item.description || item.category || ''}</p>
             <div class="menu-card-bottom">
               <div class="item-price">₹${item.price}</div>
-              
               ${isOut 
-                ? `<button class="add-btn" disabled style="background:#eee; color:#aaa; cursor:not-allowed;">✖</button>`
+                ? `<button class="add-btn" disabled style="background:#f1f5f9; color:#94a3b8; cursor:not-allowed;"><i data-lucide="x" style="width:16px;height:16px;"></i></button>`
                 : (qty === 0
-                    ? `<button class="add-btn" onclick="addToCart('${item._id}','${item.name.replace(/'/g,"\\'")}',${item.price},'${item.image || ''}')">+</button>`
+                    ? `<button class="add-btn" onclick="addToCart('${item._id}','${item.name.replace(/'/g,"\\'")}',${item.price},'${item.image || ''}')"><i data-lucide="plus" style="width:18px;height:18px;"></i></button>`
                     : `<div class="qty-control">
-                        <button class="qty-btn" onclick="changeQty('${item._id}',-1)">−</button>
+                        <button class="qty-btn" onclick="changeQty('${item._id}',-1)"><i data-lucide="minus" style="width:14px;height:14px;"></i></button>
                         <span class="qty-num">${qty}</span>
-                        <button class="qty-btn" onclick="changeQty('${item._id}',1)">+</button>
+                        <button class="qty-btn" onclick="changeQty('${item._id}',1)"><i data-lucide="plus" style="width:14px;height:14px;"></i></button>
                       </div>`
                   )
               }
@@ -167,11 +159,11 @@ function renderMenuItemsFiltered(items) {
   });
 
   document.getElementById('menu-items-list').innerHTML = html;
+  lucide.createIcons();
 }
+
 function addToCart(id, name, price, image) {
-  // Add image to the object being saved
   cart[id] = { name, price, image, qty: 1 }; 
-  
   updateCartBar();
   renderMenuItems();
 }
@@ -208,17 +200,18 @@ function renderCart() {
   const container = document.getElementById('cart-items-list');
   if (!items.length) {
     container.innerHTML = `<div class="empty">
-      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <i data-lucide="shopping-cart"></i>
       <p>Your cart is empty</p><span>Go back and add items</span>
     </div>`;
+    lucide.createIcons();
     return;
   }
   container.innerHTML = items.map(i => `
     <div class="cart-item">
-      <div class="cart-item-img" style="width: 50px; height: 50px; border-radius: 8px; overflow: hidden; background: #eee; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <div class="cart-item-img">
         ${i.image 
-          ? `<img src="${i.image}" style="width: 100%; height: 100%; object-fit: cover;">`
-          : `<svg viewBox="0 0 24 24" style="width: 24px; height: 24px;"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/></svg>`
+          ? `<img src="${i.image}">`
+          : `<i data-lucide="image"></i>`
         }
       </div>
       <div class="cart-item-info">
@@ -233,6 +226,7 @@ function renderCart() {
   document.getElementById('cart-subtotal').textContent = `₹${subtotal}`;
   document.getElementById('cart-tax').textContent = `₹${tax}`;
   document.getElementById('cart-total-amount').textContent = `₹${subtotal + tax}`;
+  lucide.createIcons();
 }
 
 async function placeOrder() {
@@ -250,43 +244,28 @@ async function placeOrder() {
   updateCartBar();
   showToast('Order placed successfully ✓');
 
-  // Start 90 second modification countdown
   startModifyCountdown(data.order._id);
-
   setTimeout(() => showScreen('screen-home'), 1200);
 }
 
 function startModifyCountdown(orderId) {
   let secondsLeft = 90;
 
-  // Show countdown banner on home screen
   const banner = document.createElement('div');
   banner.id = 'modify-banner';
   banner.style.cssText = `
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    background: #1B2B4B;
-    color: white;
-    padding: 12px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 999;
-    font-size: 13px;
-    font-weight: 500;
+    position: fixed; top: 0; left: 0; right: 0;
+    background: #0f172a; color: white;
+    padding: 16px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 999; font-size: 14px; font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   `;
   banner.innerHTML = `
-    <span>Modify order? <strong id="countdown-timer">1:30</strong> left</span>
+    <span>Modify order? <strong id="countdown-timer" style="color:#f59e0b;">1:30</strong> left</span>
     <button onclick="requestModification('${orderId}')" style="
-      background: white;
-      color: #1B2B4B;
-      border: none;
-      border-radius: 8px;
-      padding: 6px 14px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
+      background: white; color: #0f172a; border: none; border-radius: 10px;
+      padding: 8px 16px; font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit;
     ">Modify</button>
   `;
   document.body.appendChild(banner);
@@ -308,7 +287,6 @@ function startModifyCountdown(orderId) {
     }
   }, 1000);
 
-  // Also lock if server sends order-locked event
   socket.on('order-locked', (data) => {
     if (data.tableNumber === TABLE_NUMBER) {
       clearInterval(interval);
@@ -355,14 +333,12 @@ async function sendRequest(type) {
 async function loadBill() {
   const res = await fetch(`${API}/orders/table/${TABLE_NUMBER}`);
   let orders = await res.json();
-  
-  // NEW: Filter out previous customer's paid orders
   orders = orders.filter(o => o.status !== 'paid');
 
   const container = document.getElementById('bill-items-list');
   if (!orders.length) {
-    container.innerHTML = '<p style="color:var(--grey-text);font-size:14px;text-align:center;padding:20px 0;">No orders yet.</p>';
-    document.getElementById('bill-total').textContent = `₹0`; // Ensure total resets
+    container.innerHTML = '<p style="color:var(--grey-text);font-size:14px;font-weight:600;text-align:center;padding:20px 0;">No orders yet.</p>';
+    document.getElementById('bill-total').textContent = `₹0`;
     return;
   }
   
@@ -370,7 +346,7 @@ async function loadBill() {
   orders.forEach(order => {
     order.items.forEach(item => {
       total += item.price * item.qty;
-      html += `<div class="bill-row"><span>${item.name} × ${item.qty}</span><span>₹${item.price * item.qty}</span></div>`;
+      html += `<div class="bill-row"><span>${item.name} × ${item.qty}</span><span style="font-weight:700;color:var(--black);">₹${item.price * item.qty}</span></div>`;
     });
   });
   container.innerHTML = html;
@@ -400,13 +376,11 @@ async function incorrectBill() {
 async function loadFeedbackItems() {
   const res = await fetch(`${API}/orders/table/${TABLE_NUMBER}`);
   let orders = await res.json();
-  
-  // NEW: Filter out previous customer's paid orders
   orders = orders.filter(o => o.status !== 'paid');
 
   const container = document.getElementById('feedback-items-list');
   if (!orders.length) {
-    container.innerHTML = '<p style="color:var(--grey-text);font-size:14px;">No orders to rate yet.</p>';
+    container.innerHTML = '<p style="color:var(--grey-text);font-size:14px;font-weight:500;">No orders to rate yet.</p>';
     return;
   }
   
@@ -473,7 +447,6 @@ async function loadHomeOrders() {
   const section = document.getElementById('active-orders-section');
   const list = document.getElementById('home-orders-list');
   
-  // NEW: Filter out BOTH 'served' and 'paid' orders from the active home screen list
   const active = orders.filter(o => o.status !== 'served' && o.status !== 'paid');
   
   if (!active.length) { section.style.display = 'none'; return; }
@@ -530,30 +503,26 @@ function askBot(q) {
   }, 400);
 }
 
-// Listen for the waiter clearing the table
 socket.on('table-cleared', (data) => {
   if (data.tableNumber === TABLE_NUMBER) {
-    // 1. Empty the cart memory
     cart = {};
     updateCartBar();
-    
-    // 2. Alert the customer
     alert('Your bill has been settled and the table is cleared. Thank you for dining with us!');
-    
-    // 3. Force the app to completely reload for the next customer
     window.location.reload();
   }
 });
 
-// Cart bar HTML (injected)
+// Cart bar HTML
 document.body.insertAdjacentHTML('beforeend', `
   <div class="cart-bar" id="cart-bar" onclick="showScreen('screen-cart')">
     <div class="cart-bar-left">
       <div class="cart-badge" id="cart-badge">0</div>
-      <span class="cart-bar-label" id="cart-bar-label">items in cart</span>
+      <span class="cart-bar-label" id="cart-bar-label">items</span>
     </div>
     <span class="cart-bar-price" id="cart-bar-price">₹0</span>
   </div>
 `);
 
+// Initialization
+lucide.createIcons();
 loadHomeOrders();
