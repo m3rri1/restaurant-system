@@ -454,19 +454,29 @@
     // Done orders
     const doneContainer = document.getElementById('done-list');
     doneContainer.innerHTML = done.length
-      ? done.map(order => `
-          <div class="card done">
-            <div class="card-header">
-              <div>
-                <div class="table-num">Table ${order.tableNumber}</div>
-                <div class="time-ago">${timeAgo(order.createdAt)}</div>
-              </div>
-              <span class="status-pill pill-served">served</span>
-            </div>
-            <div>${order.items.map(i => `<div class="item-row"><span>${i.name} x${i.qty}</span><span>₹${i.price * i.qty}</span></div>`).join('')}</div>
-          </div>`).join('')
-      : `<div class="empty-state"><div class="icon">✅</div><p>No completed orders yet</p></div>`;
-  }
+  ? done.map(order => `
+      <div class="card done">
+        <div class="card-header">
+          <div>
+            <div class="table-num">Table ${order.tableNumber}</div>
+            <div class="time-ago">${timeAgo(order.createdAt)}</div>
+          </div>
+          <span class="status-pill pill-served">served</span>
+        </div>
+        <div>${order.items.map(i => `
+          <div class="item-row">
+            <span>${i.name} x${i.qty}</span>
+            <span>₹${i.price * i.qty}</span>
+          </div>`).join('')}
+        </div>
+        <div class="card-actions" style="margin-top:12px;">
+          <button class="btn" style="background:#fee2e2;color:#ef4444;" 
+            onclick="clearTable(${order.tableNumber})">
+            Customer Left — Clear Table ${order.tableNumber}
+          </button>
+        </div>
+      </div>`).join('')
+  : `<div class="empty-state"><div class="icon">✅</div><p>No completed orders yet</p></div>`;
 
   // ===== LOAD REQUESTS (only assigned tables) =====
   async function loadRequests() {
