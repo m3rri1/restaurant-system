@@ -354,12 +354,18 @@ async function sendRequest(type) {
 // Bill
 async function loadBill() {
   const res = await fetch(`${API}/orders/table/${TABLE_NUMBER}`);
-  const orders = await res.json();
+  let orders = await res.json();
+  
+  // NEW: Filter out previous customer's paid orders
+  orders = orders.filter(o => o.status !== 'paid');
+
   const container = document.getElementById('bill-items-list');
   if (!orders.length) {
     container.innerHTML = '<p style="color:var(--grey-text);font-size:14px;text-align:center;padding:20px 0;">No orders yet.</p>';
+    document.getElementById('bill-total').textContent = `₹0`; // Ensure total resets
     return;
   }
+  
   let total = 0, html = '';
   orders.forEach(order => {
     order.items.forEach(item => {
@@ -393,12 +399,17 @@ async function incorrectBill() {
 // Feedback
 async function loadFeedbackItems() {
   const res = await fetch(`${API}/orders/table/${TABLE_NUMBER}`);
-  const orders = await res.json();
+  let orders = await res.json();
+  
+  // NEW: Filter out previous customer's paid orders
+  orders = orders.filter(o => o.status !== 'paid');
+
   const container = document.getElementById('feedback-items-list');
   if (!orders.length) {
     container.innerHTML = '<p style="color:var(--grey-text);font-size:14px;">No orders to rate yet.</p>';
     return;
   }
+  
   let items = [];
   orders.forEach(o => o.items.forEach(i => { if (!items.find(x => x.name === i.name)) items.push(i); }));
   feedbackRatings = {};
@@ -457,11 +468,16 @@ async function submitOther() {
 // Home orders
 async function loadHomeOrders() {
   const res = await fetch(`${API}/orders/table/${TABLE_NUMBER}`);
-  const orders = await res.json();
+  let orders = await res.json();
+  
   const section = document.getElementById('active-orders-section');
   const list = document.getElementById('home-orders-list');
-  const active = orders.filter(o => o.status !== 'served');
+  
+  // NEW: Filter out BOTH 'served' and 'paid' orders from the active home screen list
+  const active = orders.filter(o => o.status !== 'served' && o.status !== 'paid');
+  
   if (!active.length) { section.style.display = 'none'; return; }
+  
   section.style.display = 'block';
   list.innerHTML = active.map(o => `
     <div class="order-card">
