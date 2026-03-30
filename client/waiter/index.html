@@ -439,10 +439,13 @@
           </div>
           <div class="card-actions">
             ${order.status === 'pending'
-              ? `<button class="btn btn-preparing" onclick="updateOrder('${order._id}','preparing')">👨‍🍳 Preparing</button>`
+              ? `<button class="btn btn-preparing" onclick="updateOrder('${order._id}','preparing')">Preparing</button>`
               : ''}
             ${order.status === 'preparing'
-              ? `<button class="btn btn-served" onclick="updateOrder('${order._id}','served')">✅ Served</button>`
+              ? `<button class="btn btn-served" onclick="updateOrder('${order._id}','served')">Served</button>`
+              : ''}
+            ${order.status === 'served'
+              ? `<button class="btn" style="background:#fee2e2;color:#ef4444;" onclick="clearTable(${order.tableNumber})">Customer Left — Clear Table</button>`
               : ''}
           </div>
         </div>`).join('');
@@ -535,6 +538,13 @@
     });
     loadRequests();
   }
+
+  async function clearTable(tableNumber) {
+  if (!confirm(`Customer left Table ${tableNumber}? This will clear all orders.`)) return;
+  await fetch(`${API}/tables/clear/${tableNumber}`, { method: 'POST' });
+  loadOrders();
+  loadRequests();
+}
 
   // ===== SOCKET: Real-time =====
   socket.on('new-order', (order) => {
