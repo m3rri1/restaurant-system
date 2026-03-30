@@ -15,6 +15,38 @@ router.post('/add', async (req, res) => {
   res.json({ message: 'Table added', table });
 });
 
+router.post('/clear/:tableNumber', async (req, res) => {
+  try {
+    const tableNumber = parseInt(req.params.tableNumber);
+
+    // Mark all orders as cleared
+    await Order.updateMany(
+      { tableNumber },
+      { cleared: true, status: 'served' }
+    );
+
+    // Mark all requests as done
+    await Request.updateMany(
+      { tableNumber },
+      { status: 'done' }
+    );
+
+    // Set table to empty
+    await Table.findOneAndUpdate(
+      { tableNumber },
+      { status: 'empty' }
+    );
+
+    const io = req.app.get('io');
+    io.emit('table-cleared', { tableNumber });
+
+    res.json({ message: 'Table cleared successfully' });
+  } catch(e) {
+    console.log('Clear table error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Update table status
 router.put('/status/:tableNumber', async (req, res) => {
   const table = await Table.findOneAndUpdate(

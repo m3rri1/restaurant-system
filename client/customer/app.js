@@ -514,6 +514,15 @@ function askBot(q) {
   }, 400);
 }
 
+socket.on('table-cleared', (data) => {
+  if (data.tableNumber === TABLE_NUMBER) {
+    // Reset home screen
+    document.getElementById('active-orders-section').style.display = 'none';
+    document.getElementById('home-orders-list').innerHTML = '';
+    showToast('Table cleared. Thank you for dining with us!');
+  }
+});
+
 // Cart bar HTML (injected)
 document.body.insertAdjacentHTML('beforeend', `
   <div class="cart-bar" id="cart-bar" onclick="showScreen('screen-cart')">

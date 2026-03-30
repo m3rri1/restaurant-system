@@ -559,9 +559,24 @@
 
   async function clearTable(tableNumber) {
   if (!confirm(`Customer left Table ${tableNumber}? This will clear all orders.`)) return;
-  await fetch(`${API}/tables/clear/${tableNumber}`, { method: 'POST' });
-  loadOrders();
-  loadRequests();
+  
+  try {
+    const res = await fetch(`${API}/tables/clear/${tableNumber}`, { 
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    
+    if (data.error) {
+      alert('Error clearing table: ' + data.error);
+      return;
+    }
+    
+    loadOrders();
+    loadRequests();
+  } catch(e) {
+    alert('Connection error. Try again.');
+  }
 }
 
   // ===== SOCKET: Real-time =====
@@ -581,6 +596,11 @@
 
   socket.on('order-updated', () => loadOrders());
   socket.on('request-updated', () => loadRequests());
+
+  socket.on('table-cleared', (data) => {
+  loadOrders();
+  loadRequests();
+});
 
   setInterval(() => { loadOrders(); loadRequests(); }, 30000);
 </script>
