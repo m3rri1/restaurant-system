@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
+
 const Table = require('../models/Table');
+const Order = require('../models/Order'); 
+const Request = require('../models/Request'); 
+const Complaint = require('../models/Complaint');
 
 // Get all tables
 router.get('/', async (req, res) => {
